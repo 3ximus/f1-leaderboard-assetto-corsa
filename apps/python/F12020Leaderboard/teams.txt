@@ -1,10 +1,10 @@
-alpha_tauri:Fabio Rafaello
-ferrari:Louis Dvart
-haas:Tony Cook
-mclaren:Speedster Marinho
-mercedes:David Dias
-racing_point:Dani Wise
-red_bull:Max Vermemes
-renault:Idris Nitrol De Miranda
-williams:Manel
-alpha_romeo:Miguelito Cantore
+Alpha Tauri:alpha_tauri:Fabio Rafaello
+Ferrari:ferrari:Louis Dvart
+Haas:haas:Tony Cook
+McLaren:mclaren:Speedster Marinho
+Mercedes:mercedes:David Dias
+Racing Point:racing_point:Dani Wizzardo
+Red Bull:red_bull:Max Vermemes
+Renault:renault:Idris Nitrol De Miranda
+Williams:williams:Manel
+Alfa Romeo:alfa_romeo:Miguelito Cantore

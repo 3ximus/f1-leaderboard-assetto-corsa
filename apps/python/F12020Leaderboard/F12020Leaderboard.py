@@ -52,7 +52,6 @@ timer0, timer1 = 0, 0
 # VARIABLES
 totalDrivers = 0
 driverPositions = None
-focusedCar = 0
 
 # WINDOWS
 leaderboardWindow = None
@@ -118,7 +117,6 @@ def acMain(ac_version):
     leaderboard = [None] * totalDrivers
     for i in range(totalDrivers):
         leaderboard[i] = LeaderboardRow(i)
-        leaderboard[i].make_row(i)
 
     return APP_NAME
 
@@ -203,35 +201,22 @@ class LeaderboardRow:
     Y_BASE = 84
     ROW_HEIGHT = 37
     def __init__(self, row):
-        self.row = row 
-        self.positionLabel = None
-        self.teamLabel = None
-        self.nameLabel = None
-        self.pitLabel = None
-        self.infoLabel = None
-
-        self.button = None
-
-        self.driverName = None
-        self.driverId = -1
-        self.interval = 0
-
-        self.positionLabelId = 0 # 0 white, 1 red, 2 green - to prevent loading the labels all the time
-        self.out = False
-
-    def make_row(self, id):
+        # SET SOME VARIABLES
+        self.row = row
         px, py = LeaderboardRow.X_BASE, LeaderboardRow.Y_BASE + LeaderboardRow.ROW_HEIGHT * self.row # position of the names
         self.px = px
         self.py = py
+        self.positionLabelId = 0 # 0 white, 1 red, 2 green - to prevent loading the labels all the time
+        self.out = False
 
+        # CREATE LABELS
         self.positionLabel = ac.addLabel(leaderboardWindow, "")
         ac.setPosition(self.positionLabel, px-4, py-7)
         ac.setSize(self.positionLabel, 38, 38)
         ac.setBackgroundTexture(self.positionLabel, LEADERBOARD_POSITION_LABEL[self.row+1]);
-        self.positionLabelId = 0 # position label white
 
-        self.driverName = ac.getDriverName(id)
-        self.driverId = id
+        self.driverName = ac.getDriverName(row)
+        self.driverId = row
         self.nameLabel = ac.addLabel(leaderboardWindow, self.driverName[:3].upper())
         ac.setPosition(self.nameLabel, px + 65, py)
         ac.setFontSize(self.nameLabel, 18)
@@ -254,12 +239,15 @@ class LeaderboardRow:
         ac.setCustomFont(self.infoLabel, FONT_NAME, 0, 1)
         ac.setFontColor(self.infoLabel, 0.86, 0.86, 0.86, 1)
         ac.setFontAlignment(self.infoLabel, "right")
-        
-        # self.button = ac.addButton(leaderboardWindow, "")
-        # ac.setPosition(self.button, px, py-4)
-        # ac.setSize(self.button, 200,38)
-        # ac.addOnClickedListener(self.button, functools.partial(on_click, row=self.row))
-    
+
+        self.button = ac.addButton(leaderboardWindow, "")
+        ac.setPosition(self.button, px, py-7)
+        ac.setSize(self.button, 140, 38)
+        self.on_click_func = functools.partial(on_click, row=self.row)
+        ac.addOnClickedListener(self.button, self.on_click_func)
+        ac.setBackgroundOpacity(self.button, 0)
+        ac.drawBorder(self.button, 0)
+
     def update_name(self, id):
         if self.driverId == id: return # no need to update
         self.driverName = ac.getDriverName(id)
@@ -311,7 +299,6 @@ def acUpdate(deltaT):
     # VARIABLES
     global totalDrivers
     global driverPositions
-    global focusedCar
 
     global leaderboardWindow, driverWidget
 
@@ -319,8 +306,11 @@ def acUpdate(deltaT):
     global leaderboard
     global lapCountTimerLabel
 
+    # ============================
+    # UPDATE TIMERS
     timer0 += deltaT
     timer1 += deltaT
+    # ============================
   
     # Once per second
     if timer0 > 1:
@@ -343,11 +333,7 @@ def acUpdate(deltaT):
 
         # ============================
         # CHANGE CAR FOCUS AND DRIVER WIDGET
-        # TODO
-        # if focusedCar != ac.getFocusedCar():
-        #     ac.focusCar(focusedCar)
-
-        driverWidget.show(focusedCar)
+        driverWidget.show(ac.getFocusedCar())
 
     # 3 times per second
     if timer1 > 0.3:
@@ -375,7 +361,7 @@ def acUpdate(deltaT):
             driverPositions[i][0] = pos
 
         timer1 = 0
-        
+
 def get_image_size(fname):
     with open(fname, 'rb') as fhandle:
         head = fhandle.read(24)
@@ -400,6 +386,5 @@ def time_to_string(t, include_ms=True):
 	except Exception:
 		return '--:--.---'
 
-def on_click(*args, row=None):
-    global focusedCar
-    focusedCar = row
+def on_click(*args, row=0):
+    ac.focusCar(leaderboard[row].driverId)

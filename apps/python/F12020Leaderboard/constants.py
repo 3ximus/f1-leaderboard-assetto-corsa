@@ -43,10 +43,12 @@ try:
     if not FC.TEAM_COLORS:
         FC.TEAM_COLORS = {}
         FC.TEAM_NAME = {}
-        with open("apps/python/%s/teams.txt" % APP_NAME) as fp:
+        FC.DRIVER_NUMBER = {}
+        with open("apps/python/%s/teams.ini" % APP_NAME) as fp:
             for line in fp:
                 line = line.split(":")
                 FC.TEAM_COLORS[line[-1][:-1]] = "apps/python/%s/ui/teams/%s.png" % (APP_NAME, line[1])
                 FC.TEAM_NAME[line[-1][:-1]] = line[0]
+                FC.DRIVER_NUMBER[line[-1][:-1]] = line[2]
 except FileNotFoundError:
     pass

@@ -7,6 +7,7 @@ class LeaderboardRow:
     X_BASE = 5
     Y_BASE = 84
     ROW_HEIGHT = 37
+    FASTEST_LAP_ID = -1
     def __init__(self, leaderboardWindow, row):
         # SET SOME VARIABLES
         self.row = row
@@ -48,6 +49,12 @@ class LeaderboardRow:
         ac.setFontColor(self.infoLabel, 0.86, 0.86, 0.86, 1)
         ac.setFontAlignment(self.infoLabel, "right")
 
+        self.fastestLapLabel = ac.addLabel(leaderboardWindow, "")
+        ac.setPosition(self.fastestLapLabel, px-41, py-6)
+        ac.setSize(self.fastestLapLabel, 37, 37)
+        ac.setBackgroundTexture(self.fastestLapLabel, FC.LEADERBOARD_FASTEST_LAP); 
+        ac.setVisible(self.fastestLapLabel, 0)
+ 
         self.button = ac.addButton(leaderboardWindow, "")
         ac.setPosition(self.button, px, py-7)
         ac.setSize(self.button, 140, 38)
@@ -106,16 +113,25 @@ class LeaderboardRow:
         ac.setText(self.infoLabel, "OUT")
         ac.setFontColor(self.infoLabel, .58,.53,.53, 1)
     
-    def mark_pits(self):
+    def mark_enter_pits(self):
         if self.out or self.pit: return
         self.pit = True
         ac.setText(self.infoLabel, "IN PIT")
         ac.setFontColor(self.infoLabel, 0,.84,1, 1)
     
-    def mark_unpit(self):
+    def mark_left_pits(self):
         if self.out or not self.pit: return
         self.pit = False
+        if self.driverId == 0:
+            ac.setText(self.infoLabel, "Interval")
         ac.setFontColor(self.infoLabel, 0.86, 0.86, 0.86, 1)
+    
+    def mark_fastest_lap(self):
+        if self.out or self.pit: return
+        if self.driverId == LeaderboardRow.FASTEST_LAP_ID:
+            ac.setVisible(self.fastestLapLabel, 1)
+        else:
+            ac.setVisible(self.fastestLapLabel, 0)
     
     @staticmethod
     def on_click(*args, row=None):

@@ -15,6 +15,7 @@ class LeaderboardRow:
         self.py = py
         self.positionLabelId = 0 # 0 white, 1 red, 2 green - to prevent loading the labels all the time
         self.out = False
+        self.pit = False
 
         # CREATE LABELS
         self.positionLabel = ac.addLabel(leaderboardWindow, "")
@@ -57,16 +58,17 @@ class LeaderboardRow:
 
     def update_name(self, id):
         if self.driverId == id: return # no need to update
-        self.driverName = ac.getDriverName(id)
         self.driverId = id
-        ac.setText(self.nameLabel, self.driverName[:3].upper())
+        self.driverName = ac.getDriverName(id)
+        displayName = self.driverName.split()[-1][:3].upper()
+        ac.setText(self.nameLabel, displayName)
         try:
             ac.setBackgroundTexture(self.teamLabel, FC.TEAM_COLORS[self.driverName]);
         except KeyError:
             ac.console("%s:Name Missing in teams.txt %s" % (FC.APP_NAME, self.driverName))
     
     def update_time(self, time):
-        if self.out or self.row == 0: return # no need to update
+        if self.out or self.pit or self.row == 0: return # no need to update
         ac.setText(self.infoLabel, time)
     
     def mark_red_position(self):
@@ -103,7 +105,18 @@ class LeaderboardRow:
         ac.setFontColor(self.nameLabel, .58,.53,.53, 1)
         ac.setText(self.infoLabel, "OUT")
         ac.setFontColor(self.infoLabel, .58,.53,.53, 1)
-
+    
+    def mark_pits(self):
+        if self.out or self.pit: return
+        self.pit = True
+        ac.setText(self.infoLabel, "IN PIT")
+        ac.setFontColor(self.infoLabel, 0,.84,1, 1)
+    
+    def mark_unpit(self):
+        if self.out or not self.pit: return
+        self.pit = False
+        ac.setFontColor(self.infoLabel, 0.86, 0.86, 0.86, 1)
+    
     @staticmethod
     def on_click(*args, row=None):
         if row:

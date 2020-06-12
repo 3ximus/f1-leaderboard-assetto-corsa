@@ -7,8 +7,8 @@ class FC:
 
     # IMAGES
     LEADERBOARD_POSITION_LABEL = ["apps/python/%s/ui/positions/%d.png" % (APP_NAME, n) for n in range(20)]
-    LEADERBOARD_POSITION_RED_LABEL = ["apps/python/%s/ui/positions/red/%d.png" % (APP_NAME, n) for n in range(20)]
-    LEADERBOARD_POSITION_GREEN_LABEL = ["apps/python/%s/ui/positions/green/%d.png" % (APP_NAME, n) for n in range(20)]
+    LEADERBOARD_POSITION_RED_LABEL = ["apps/python/%s/ui/positions/%d_red.png" % (APP_NAME, n) for n in range(20)]
+    LEADERBOARD_POSITION_GREEN_LABEL = ["apps/python/%s/ui/positions/%d_green.png" % (APP_NAME, n) for n in range(20)]
 
     LEADERBOARD_BACKGROUND = "apps/python/%s/ui/background.png" % APP_NAME
     LEADERBOARD_BASE_RACE = "apps/python/%s/ui/race_base.png" % APP_NAME 

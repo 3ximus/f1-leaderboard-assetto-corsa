@@ -17,7 +17,7 @@ from utils import get_image_size, time_to_string
 from DriverWidget import DriverWidget
 from LeaderboardRow import LeaderboardRow
 
-N_SPLITS = 20 # Number of splits counted in trak
+TRACK_SECTION_LENGTH = 110
 
 # TIMERS
 timer0, timer1, timer2 = 0, 0, 0
@@ -35,12 +35,15 @@ leaderboard = None
 lapCountTimerLabel = None
 
 class Driver: # class to hold driver information
-    def __init__(self, id):
+    def __init__(self, id, n_splits):
         self.id = id
         self.position = 200
         self.timer = 0
         self.current_split = -1
-        self.split_times = [0 for i in range(N_SPLITS)] # make this dependant of the track
+        self.n_splits = int(n_splits)
+        self.split_times = [0 for i in range(int(n_splits))] # make this dependant of the track
+    def get_split_id(self, spline):
+        return int(spline//(1/self.n_splits))
 
 def acMain(ac_version):
     # VARIABLES
@@ -53,8 +56,9 @@ def acMain(ac_version):
     global lapCountTimerLabel
 
     totalDrivers = ac.getCarsCount()
-    drivers = [Driver(i) for i in range(totalDrivers)] # driver positions and update times
-
+    n_splits = ac.getTrackLength(0) / TRACK_SECTION_LENGTH
+    drivers = [Driver(i, n_splits) for i in range(totalDrivers)] # driver positions and update times
+    
     ac.initFont(0, FC.FONT_NAME, 0, 0)
 
     leaderboardWindow = ac.newApp(FC.APP_NAME)
@@ -149,7 +153,7 @@ def acUpdate(deltaT):
             for i in range(1, len(dPosition)):
                 driver_ahead, driver = dPosition[i-1], dPosition[i]
                 timeDiff = driver.split_times[driver.current_split - 1] - driver_ahead.split_times[driver.current_split - 1]
-                if driver.id == 0: ac.console(str(timeDiff) + str(driver.split_times)) # TODO
+                if timeDiff < 0: continue # ignore these times
                 leaderboard[driver.position].update_time("+" + time_to_string(timeDiff*1000))
 
             # ============================
@@ -187,6 +191,12 @@ def acUpdate(deltaT):
                 drivers[i].position = pos
                 # END OVERTAKE
 
+            for row in leaderboard:
+                if ac.isCarInPitline(row.driverId) == 1:
+                    row.mark_pits()
+                else:
+                    row.mark_unpit()
+
         timer1 = 0
 
     # 10 times per second
@@ -197,10 +207,7 @@ def acUpdate(deltaT):
         # SAVE SPLIT TIMES
         for d in drivers:
             if ac.isConnected(d.id) == 0: continue
-            current_split = get_split_id(ac.getCarState(d.id, acsys.CS.NormalizedSplinePosition))
+            current_split = d.get_split_id(ac.getCarState(d.id, acsys.CS.NormalizedSplinePosition))
             if d.current_split != current_split: # save split time at each split of the track
                 d.split_times[current_split-1] = time.time()
                 d.current_split = current_split
-
-def get_split_id(spline):
-    return int(spline//(1/N_SPLITS))

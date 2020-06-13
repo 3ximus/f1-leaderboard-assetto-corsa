@@ -51,6 +51,10 @@ class DriverWidget:
         ac.setFontColor(self.teamNameLabel, 0.66, 0.66, 0.66, 1)
         ac.setFontAlignment(self.teamNameLabel, "left")
 
+        self.numberLabel = ac.addLabel(self.window, "")
+        ac.setPosition(self.numberLabel, w - 63, 7)
+        ac.setSize(self.numberLabel, 55, 55)
+
         self.button = ac.addButton(self.window, "")
         ac.setPosition(self.button, 0, 0)
         ac.setSize(self.button, w, h)
@@ -109,7 +113,6 @@ class DriverWidget:
         self.placesIconLabel = ac.addLabel(self.window, "")
         ac.setPosition(self.placesIconLabel, 135, 84)
         ac.setSize(self.placesIconLabel, 35, 35)
-        ac.setBackgroundTexture(self.placesIconLabel, FC.POSITION_GAINED)
 
         self.tyreLabel = ac.addLabel(self.window, "")
         ac.setPosition(self.tyreLabel, 263, 78)
@@ -133,15 +136,13 @@ class DriverWidget:
         ac.setVisible(self.pitStopTextLabel, 0)
         ac.setVisible(self.pitStopLabel, 0)
 
-        # TODO
-        # self.driverNumberLabel = ac.addLabel(self.window, "")
-    
     def hide(self):
         if not self.visible: return
         self.visible = False
         ac.setVisible(self.backgroundTexture, 0)
         ac.setVisible(self.rolexLabel, 0)
         ac.setVisible(self.positionLabel, 0)
+        ac.setVisible(self.numberLabel, 0)
         ac.setVisible(self.teamLabel, 0)
         ac.setVisible(self.nameLabel, 0)
         ac.setVisible(self.teamNameLabel, 0)
@@ -186,14 +187,17 @@ class DriverWidget:
             ac.setVisible(self.backgroundTexture, 1)
             ac.setVisible(self.nameLabel, 1)
             name = ac.getDriverName(id)
-            ac.setText(self.nameLabel, name)
+            sName = name.split()
+            ac.setText(self.nameLabel, "%s %s" %(sName[0], sName[-1].upper()))
 
             if FC.TEAM_COLORS:
                 try:
                     ac.setBackgroundTexture(self.teamLabel, FC.TEAM_COLORS[name]);
+                    ac.setText(self.teamNameLabel, FC.TEAM_NAME[name])
+                    ac.setBackgroundTexture(self.numberLabel, FC.NUMBER_TAGS[name]);
                     ac.setVisible(self.teamLabel, 1)
                     ac.setVisible(self.teamNameLabel, 1)
-                    ac.setText(self.teamNameLabel, FC.TEAM_NAME[name])
+                    ac.setVisible(self.numberLabel, 1)
                 except KeyError:
                     ac.console("%s:Name Missing in teams.txt %s" % (FC.APP_NAME, name))
 
@@ -201,8 +205,13 @@ class DriverWidget:
             self.extended = DriverWidget.extended
             if self.extended:
                 ac.setText(self.pitStopLabel, str(pit_stops))
-                ac.setText(self.startedLabel, str(starting_position) + "th")
-                ac.setBackgroundTexture(self.tyreLabel, FC.TYRE_BASE_NAME + str(tyres.split()[0]) + ".png");
+                u = str(starting_position)[-1]
+                if u == "1": subscript = "st"
+                if u == "2": subscript = "nd"
+                if u == "3": subscript = "rd"
+                else: subscript = "th"
+                ac.setText(self.startedLabel, str(starting_position) + subscript)
+                ac.setBackgroundTexture(self.tyreLabel, FC.TYRE_BASE_NAME + tyres + ".png");
 
                 ac.setBackgroundTexture(self.backgroundTexture, FC.DRIVER_WIDGET_BACKGROUND_ALTERNATE)
                 ac.setVisible(self.extendedBackgroundTexture, 1)

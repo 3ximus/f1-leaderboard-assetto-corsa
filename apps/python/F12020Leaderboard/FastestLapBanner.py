@@ -23,7 +23,7 @@ class FastestLapBanner:
 
         self.fastestLapBackground = ac.addLabel(self.window, "")
         ac.setPosition(self.fastestLapBackground, w, 0)
-        ac.setSize(self.fastestLapBackground, 350, h)
+        ac.setSize(self.fastestLapBackground, 400, h)
         ac.setBackgroundTexture(self.fastestLapBackground, FC.DRIVER_WIDGET_BACKGROUND);
 
         self.nameLabel = ac.addLabel(self.window, "")
@@ -41,7 +41,7 @@ class FastestLapBanner:
         ac.setFontAlignment(self.lastNameLabel, "left")
 
         self.timeLabel = ac.addLabel(self.window, "")
-        ac.setPosition(self.timeLabel, w + 335, 15)
+        ac.setPosition(self.timeLabel, w + 385, 15)
         ac.setFontSize(self.timeLabel, 35)
         ac.setCustomFont(self.timeLabel, FC.FONT_NAME, 0, 1)
         ac.setFontColor(self.timeLabel, 0.86, 0.86, 0.86, 1)

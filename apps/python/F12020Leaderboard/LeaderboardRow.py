@@ -33,11 +33,11 @@ class LeaderboardRow:
         ac.setFontColor(self.nameLabel, 0.86, 0.86, 0.86, 1)
         ac.setFontAlignment(self.nameLabel, "left")
 
+        self.teamLabel = ac.addLabel(leaderboardWindow, "")
+        ac.setPosition(self.teamLabel, px + 47, py + 2)
+        ac.setSize(self.teamLabel, 5, 18)
         if FC.TEAM_COLORS:
             try:
-                self.teamLabel = ac.addLabel(leaderboardWindow, "")
-                ac.setPosition(self.teamLabel, px + 47, py + 2)
-                ac.setSize(self.teamLabel, 5, 18)
                 ac.setBackgroundTexture(self.teamLabel, FC.TEAM_COLORS[self.driverName]);
             except KeyError:
                 ac.console("%s:Name Missing in teams.txt %s" % (FC.APP_NAME, self.driverName))
@@ -70,12 +70,12 @@ class LeaderboardRow:
         displayName = self.driverName.split()[-1][:3].upper()
         ac.setText(self.nameLabel, displayName)
         try:
-            ac.setBackgroundTexture(self.teamLabel, FC.TEAM_COLORS[self.driverName]);
+            ac.setBackgroundTexture(self.teamLabel, FC.TEAM_COLORS[self.driverName])
         except KeyError:
             ac.console("%s:Name Missing in teams.txt %s" % (FC.APP_NAME, self.driverName))
     
     def update_time(self, time):
-        if self.out or self.pit or self.row == 0: return # no need to update
+        if self.out or self.pit: return # no need to update
         ac.setText(self.infoLabel, time)
     
     def mark_red_position(self):

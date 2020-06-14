@@ -199,7 +199,7 @@ class DriverWidget:
                     ac.setVisible(self.teamNameLabel, 1)
                     ac.setVisible(self.numberLabel, 1)
                 except KeyError:
-                    ac.console("%s:Name Missing in teams.txt %s" % (FC.APP_NAME, name))
+                    ac.log("%s:Name Missing in teams.txt %s" % (FC.APP_NAME, name))
 
         if self.extended != DriverWidget.extended or self.id != id:
             self.extended = DriverWidget.extended
@@ -239,5 +239,4 @@ class DriverWidget:
     
     @staticmethod
     def toogle_extended(*args):
-        ac.console("HERE")
         DriverWidget.extended = not DriverWidget.extended

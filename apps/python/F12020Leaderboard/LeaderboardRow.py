@@ -40,7 +40,7 @@ class LeaderboardRow:
             try:
                 ac.setBackgroundTexture(self.teamLabel, FC.TEAM_COLORS[self.driverName]);
             except KeyError:
-                ac.console("%s:Name Missing in teams.txt %s" % (FC.APP_NAME, self.driverName))
+                ac.log("%s:Name Missing in teams.txt %s" % (FC.APP_NAME, self.driverName))
 
         self.infoLabel = ac.addLabel(leaderboardWindow, "Interval")
         ac.setPosition(self.infoLabel, 250, py)
@@ -72,7 +72,7 @@ class LeaderboardRow:
         try:
             ac.setBackgroundTexture(self.teamLabel, FC.TEAM_COLORS[self.driverName])
         except KeyError:
-            ac.console("%s:Name Missing in teams.txt %s" % (FC.APP_NAME, self.driverName))
+            ac.log("%s:Name Missing in teams.txt %s" % (FC.APP_NAME, self.driverName))
     
     def update_time(self, time):
         if self.out or self.pit: return # no need to update
@@ -105,7 +105,6 @@ class LeaderboardRow:
     def mark_out(self):
         if self.out: return
         self.out = True
-        ac.console("OUT %d %s" % (self.row, self.driverName))
         ac.setVisible(self.positionLabel, 0)
         ac.setPosition(self.teamLabel, self.px + 12, self.py + 2)
         ac.setPosition(self.nameLabel, self.px + 30, self.py)

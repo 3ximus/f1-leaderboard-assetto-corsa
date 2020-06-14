@@ -1,6 +1,7 @@
 import sys
 import os
 import time
+import bisect
 
 import ac
 import acsys
@@ -18,19 +19,24 @@ from DriverWidget import DriverWidget
 from LeaderboardRow import LeaderboardRow
 from FastestLapBanner import FastestLapBanner
 
+
+MAX_LAP_TIME = 999999999
+
 # TIMERS
 timer0, timer1, timer2 = 0, 0, 0
+
  
 # VARIABLES
 totalDrivers = 0
 drivers = None
-fastest_lap = 99999999
+fastest_lap = MAX_LAP_TIME
 
 race_started = False
 replay_started = False
 
 # REPLAY FILE
 replay_file = None
+replay_data = None
 
 # WINDOWS
 leaderboardWindow = None
@@ -54,6 +60,8 @@ class Driver: # class to hold driver information
         self.pit_time = 0
         self.tyre = ""
         self.timeDiff = 0
+        self.out = False
+        self.current_lap = 0
 
     def get_split_id(self, spline):
         return int(spline//(1/self.n_splits))
@@ -139,6 +147,7 @@ def acUpdate(deltaT):
     global race_started, replay_started
 
     global replay_file
+    global replay_data
 
     # Widgets
     global leaderboardWindow, driverWidget
@@ -168,7 +177,9 @@ def acUpdate(deltaT):
 
             # ============================
             # SERVER LAP
-            lc = max((ac.getCarState(i, acsys.CS.LapCount) for i in range(totalDrivers))) + 1
+            for i in range(totalDrivers):
+                drivers[i].current_lap = ac.getCarState(i, acsys.CS.LapCount)
+            lc = max((drivers[i].current_lap for i in range(totalDrivers))) + 1
             if lc >= info.graphics.numberOfLaps:
                 ac.setText(lapCountTimerLabel, "FINAL LAP")
                 ac.setFontColor(lapCountTimerLabel, 1,0,0,1)
@@ -183,22 +194,22 @@ def acUpdate(deltaT):
                 driver_ahead, driver = dPosition[i-1], dPosition[i]
                 timeDiff = driver.split_times[driver.current_split - 1] - driver_ahead.split_times[driver.current_split - 1]
                 if timeDiff < 0: continue # ignore these times, happens on overtakes
+                if driver.position > totalDrivers: continue # might try to update before it is possible
                 driver.timeDiff = timeDiff
-                if driver.position > totalDrivers: continue # might try to update befor it is possible
                 leaderboard[driver.position].update_time("+" + time_to_string(timeDiff*1000))
             leaderboard[0].update_time("Interval") # Force it
 
             # ============================
             # MARK FASTEST LAP
             if lc > FC.FASTEST_LAP_STARTING_LAP:
-                fastest_driver = None
                 for d in drivers:
                     lap = ac.getCarState(d.id, acsys.CS.BestLap)
                     if lap != 0 and lap < fastest_lap:
                         fastest_lap = lap
                         fastest_lap_banner.show(lap, ac.getDriverName(d.id))
-                        fastest_driver = d
                         LeaderboardRow.FASTEST_LAP_ID = d.id;
+                        if replay_file:
+                            write_fastest_lap(replay_file, info.graphics.completedLaps, info.graphics.iCurrentTime, d, fastest_lap)
                 for row in leaderboard:
                     row.mark_fastest_lap()
 
@@ -216,14 +227,17 @@ def acUpdate(deltaT):
 
             # ============================
             # CHANGE CAR FOCUS AND DRIVER WIDGET
-            id = ac.getFocusedCar()
-            if drivers[id].position <= totalDrivers: # in case it wasnt updated yet
-                driverWidget.show(id, drivers[id].position, drivers[id].starting_position, drivers[id].tyre, drivers[id].pits)
+            if race_started:
+                id = ac.getFocusedCar()
+                if drivers[id].position <= totalDrivers: # in case it wasnt updated yet
+                    driverWidget.show(id, drivers[id].position, drivers[id].starting_position, drivers[id].tyre, drivers[id].pits)
+            else:
+                driverWidget.hide()
 
             # ========================================================
             # SAVE DRIVER STATUS IN A FILE TO LOAD ON REPLAY
             if replay_file:
-                write_driver_info(replay_file, info.graphics.iCurrentTime, drivers)
+                write_driver_info(replay_file, info.graphics.completedLaps, info.graphics.iCurrentTime, drivers)
             # ========================================================
 
         # 3 times per second
@@ -234,16 +248,20 @@ def acUpdate(deltaT):
                     for d in drivers:
                         d.starting_position = ac.getCarLeaderboardPosition(d.id)
                         d.tyre = ac.getCarTyreCompound(d.id)
-                    replay_file = setup_replay_file(drivers) # save starting info on the drivers
+                    replay_file = setup_replay_file(drivers, info.graphics.numberOfLaps) # save starting info on the drivers
 
             # ============================
             # POSITION UPDATE
             for i in range(totalDrivers):
                 pos = ac.getCarRealTimeLeaderboardPosition(i)
-                if ac.isConnected(i) == 0: # mark unconnected drivers
+                connected = ac.isConnected(i)
+                if connected == 0 and not drivers[i].out: # mark unconnected drivers
                     leaderboard[pos].mark_out()
-                else:
+                    drivers[i].out = True
+                elif connected == 1 and drivers[i].out:
                     leaderboard[pos].mark_in()
+                    drivers[i].out = False
+                if connected == 1:
                     leaderboard[pos].update_name(i)
 
                 # OVERTAKE
@@ -303,20 +321,86 @@ def acUpdate(deltaT):
             ac.setBackgroundOpacity(driverWidget.window, 0)
             ac.setBackgroundOpacity(fastest_lap_banner.window, 0)
 
-            id = ac.getFocusedCar()
-            drivers[id].position = 1
-            driverWidget.show(id, drivers[id].position, drivers[id].starting_position, drivers[id].tyre, drivers[id].pits)
+            # ============================
+            # SERVER LAP
+            if replay_data:
+                lc = max((drivers[i].current_lap for i in range(totalDrivers))) + 1
+                if lc >= replay_data['nLaps']:
+                    ac.setText(lapCountTimerLabel, "FINAL LAP")
+                    ac.setFontColor(lapCountTimerLabel, 1,0,0,1)
+                else:
+                    ac.setText(lapCountTimerLabel, "%d / %d" % (lc, replay_data['nLaps']))
+                    ac.setFontColor(lapCountTimerLabel, 0.86, 0.86, 0.86, 1)
+
+            # ============================
+            # PITS MARKER
+            for row in leaderboard:
+                if ac.isCarInPitline(row.driverId) == 1:
+                    row.mark_enter_pits()
+                else:
+                    row.mark_left_pits()
+
+            # ============================
+            # DRIVER WIDGET UPDATE
+            if replay_started:
+                id = ac.getFocusedCar()
+                driverWidget.show(id, drivers[id].position, drivers[id].starting_position, drivers[id].tyre, drivers[id].pits)
+            else:
+                driverWidget.hide()
+
+            # ============================
+            # UPDATE TIMES
+            if replay_data:
+                for row in leaderboard:
+                    row.update_time("+" + time_to_string(drivers[row.driverId].timeDiff*1000))
+                    if row.row == 0:
+                        row.update_time("Interval") # Force it
 
         if timer1 > 0.3:
             if not replay_started:
                 if info.graphics.iCurrentTime > 0:
-                    replay_file = open_replay_file_read()
+                    replay_data = load_replay_file(drivers)
                     replay_started = True
-                    for d in drivers:
-                        d.starting_position = ac.getCarLeaderboardPosition(d.id)
-                        d.tyre = ac.getCarTyreCompound(d.id)
 
-        
+            # ============================
+            # FASTEST LAP BANNER TIMER
+            if fastest_lap_banner.timer > 0:
+                fastest_lap_banner.timer -= timer1
+                fastest_lap_banner.hide()
+
+            # ============================
+            # GET DATA FOR THIS UPDATE
+            if replay_data:
+                new_positions = lookup_data(info.graphics.completedLaps, info.graphics.iCurrentTime, replay_data, drivers)
+
+                # ============================
+                # POSITION UPDATE
+                for i in range(totalDrivers):
+                    pos = new_positions[i]
+                    if drivers[i].out: # mark unconnected drivers
+                        leaderboard[pos].mark_out()
+                    else:
+                        leaderboard[pos].mark_in()
+                        leaderboard[pos].update_name(i)
+
+                    # OVERTAKE
+                    if pos != drivers[i].position: # there was an overtake
+                        drivers[i].timer = FC.OVERTAKE_POSITION_LABEL_TIMER # set timer
+                        if pos < drivers[i].position:
+                            leaderboard[pos].mark_green_position()
+                        elif pos > drivers[i].position:
+                            leaderboard[pos].mark_red_position()
+                    elif drivers[i].timer <= 0:
+                        leaderboard[pos].mark_white_position()
+                    else:
+                        drivers[i].timer -= timer1
+                    drivers[i].position = pos
+                    # END OVERTAKE
+            
+            timer1 = 0
+
+    # END UPDATE
+
 def acShutdown():
     global replay_file
     if replay_file:
@@ -325,23 +409,67 @@ def acShutdown():
 def reset_variables():
     pass
 
-def write_driver_info(replay_file, time, drivers):
-    data = "%d " % time
+def write_driver_info(replay_file, laps, time, drivers):
+    data = "U %d %d " % (laps, time)
     for d in drivers:
-        data += "[%d;%f;%s;%d] " % (d.position, d.timeDiff, d.tyre, d.pits)
+        data += "%d;%f;%s;%d;%d;%d " % (d.position, d.timeDiff, d.tyre, d.pits, int(d.out), d.current_lap)
     replay_file.write(data+'\n')
-    pass
 
-def setup_replay_file(drivers):
+def write_fastest_lap(replay_file, laps, time, driver, fastest_lap):
+    replay_file.write("FL %d;%d %d;%f\n" % (laps, time, driver.id, fastest_lap))
+
+def setup_replay_file(drivers, nLaps):
     replay_file = open(FC.REPLAY_DIR + "replayFile.txt", "w")
-    data = "START: "
+    data = "START %d %d " % (len(drivers), nLaps)
     for d in drivers:
-        data += "[%d;%s] " % (d.starting_position, d.tyre)
+        data += "%d;%s " % (d.starting_position, d.tyre)
     replay_file.write(data+'\n')
     return replay_file
 
-def load_replay_file():
+def load_replay_file(drivers):
     try:
-        return open(FC.REPLAY_DIR + "replayFile.txt", "r")
+        with open(FC.REPLAY_DIR + "replayFile.txt", "r") as rf:
+            data = {}
+            line = next(rf).split()
+            if line[0] != "START":
+                ac.log("Replay file doesnt start with 'START' tag.")
+                return
+            totalDrivers = int(line[1])
+            data['totalDrivers'] = totalDrivers
+            data['nLaps'] = int(line[2])
+            for i in range(3, 3+totalDrivers):
+                line[i] = line[i].split(';')
+                drivers[i-3].starting_position = int(line[i][0])
+                drivers[i-3].tyre = line[i][1]
+            for line in rf:
+                line = line.split()
+                if line[0] == "U": # normal update
+                    update = [float(line[2])]
+                    for i in range(3, 3+totalDrivers):
+                        line[i] = line[i].split(';')
+                        update.append([int(line[i][0]), float(line[i][1]), line[i][2], int(line[i][3]), bool(int(line[i][4])), int(line[i][5])])
+                    if int(line[1]) not in data:
+                        data[int(line[1])] = []
+                    data[int(line[1])].append(update)
+                elif line[0] == "FL": # TODO fastest lap
+                    pass
+                else:
+                    ac.log("Replay file has wrong tag '%s'." % line[0])
+                    return
+            return data
+
     except FileNotFoundError:
         ac.log("Replay File not found.")
+
+def lookup_data(lap, time, replay_data, drivers):
+    it = bisect.bisect_left(replay_data[lap], [time])
+    if it > len(replay_data[lap]): return
+    data = replay_data[lap][it]
+    for i in range(len(drivers)):
+        drivers[i].timeDiff = data[i+1][1]
+        drivers[i].tyre = data[i+1][2]
+        drivers[i].pits = data[i+1][3]
+        drivers[i].out = data[i+1][4]
+        drivers[i].current_lap = data[i+1][5]
+    return [data[i+1][0] for i in range(len(drivers))] # return new positions
+

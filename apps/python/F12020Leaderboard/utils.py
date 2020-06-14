@@ -13,7 +13,7 @@ def get_image_size(fname):
         if imghdr.what(fname) == 'png':
             check = struct.unpack('>i', head[4:8])[0]
             if check != 0x0d0a1a0a:
-                ac.console("%s: Error getting image size %s" % (FC.APP_NAME, fname))
+                ac.log("%s: Error getting image size %s" % (FC.APP_NAME, fname))
                 return
             width, height = struct.unpack('>ii', head[16:24])
         return width, height

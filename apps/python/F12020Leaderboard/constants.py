@@ -4,7 +4,7 @@ APP_NAME = "F12020Leaderboard"
 
 class FC:
     APP_NAME = APP_NAME
-    FONT_NAME = "Orbitron"
+    FONT_NAME = "Formula"
 
     # IMAGES
 

@@ -20,4 +20,15 @@ Each line contains the following information about each driver in order separate
 
 
 ### Screenshots
+
+RACE
+
 ![im1](/screenshots/screen1.png)
+
+QUALIFYING
+
+![im3](/screenshots/screen3.png)
+
+FASTEST LAP
+
+![im2](/screenshots/screen2.png)

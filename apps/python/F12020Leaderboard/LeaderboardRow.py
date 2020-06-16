@@ -27,7 +27,7 @@ class LeaderboardRow:
         self.driverName = ac.getDriverName(row)
         self.driverId = row
         self.nameLabel = ac.addLabel(leaderboardWindow, self.driverName[:3].upper())
-        ac.setPosition(self.nameLabel, px + 65, py)
+        ac.setPosition(self.nameLabel, px + 65, py+4)
         ac.setFontSize(self.nameLabel, 18)
         ac.setCustomFont(self.nameLabel, FC.FONT_NAME, 0, 1)
         ac.setFontColor(self.nameLabel, 0.86, 0.86, 0.86, 1)
@@ -43,7 +43,7 @@ class LeaderboardRow:
                 ac.log("%s:Name Missing in teams.txt %s" % (FC.APP_NAME, self.driverName))
 
         self.infoLabel = ac.addLabel(leaderboardWindow, "Interval")
-        ac.setPosition(self.infoLabel, 250, py)
+        ac.setPosition(self.infoLabel, 250, py+4)
         ac.setFontSize(self.infoLabel, 18)
         ac.setCustomFont(self.infoLabel, FC.FONT_NAME, 0, 1)
         ac.setFontColor(self.infoLabel, 0.86, 0.86, 0.86, 1)
@@ -98,7 +98,7 @@ class LeaderboardRow:
         self.out = False
         ac.setVisible(self.positionLabel, 1)
         ac.setPosition(self.teamLabel, self.px + 47, self.py + 2)
-        ac.setPosition(self.nameLabel, self.px + 65, self.py)
+        ac.setPosition(self.nameLabel, self.px + 65, self.py+4)
         ac.setFontColor(self.nameLabel, 0.86, 0.86, 0.86, 1)
         ac.setFontColor(self.infoLabel, 0.86, 0.86, 0.86, 1)
 
@@ -107,7 +107,7 @@ class LeaderboardRow:
         self.out = True
         ac.setVisible(self.positionLabel, 0)
         ac.setPosition(self.teamLabel, self.px + 12, self.py + 2)
-        ac.setPosition(self.nameLabel, self.px + 30, self.py)
+        ac.setPosition(self.nameLabel, self.px + 30, self.py+4)
         ac.setFontColor(self.nameLabel, .58,.53,.53, 1)
         ac.setText(self.infoLabel, "OUT")
         ac.setFontColor(self.infoLabel, .58,.53,.53, 1)

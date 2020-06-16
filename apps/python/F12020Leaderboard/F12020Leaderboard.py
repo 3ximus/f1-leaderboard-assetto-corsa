@@ -116,7 +116,7 @@ def acMain(ac_version):
     # ===============================
     # Lap Counter / Time 
     lapCountTimerLabel = ac.addLabel(leaderboardWindow, "")
-    ac.setPosition(lapCountTimerLabel, 74, 48)
+    ac.setPosition(lapCountTimerLabel, 74, 52)
     ac.setFontSize(lapCountTimerLabel, 22)
     ac.setCustomFont(lapCountTimerLabel, FC.FONT_NAME, 0, 1)
     ac.setFontAlignment(lapCountTimerLabel, "center")
@@ -279,7 +279,10 @@ def acUpdate(deltaT):
                 if timeDiff < 0: continue # ignore these times, happens on overtakes
                 if driver.position > totalDrivers: continue # might try to update before it is possible
                 driver.timeDiff = timeDiff
-                leaderboard[driver.position].update_time("+" + time_to_string(timeDiff*1000))
+                if timeDiff > 60: 
+                    leaderboard[driver.position].update_time("+1 MIN")
+                else:
+                    leaderboard[driver.position].update_time("+" + time_to_string(timeDiff*1000))
             leaderboard[0].update_time("Interval") # Force it
 
             # ============================

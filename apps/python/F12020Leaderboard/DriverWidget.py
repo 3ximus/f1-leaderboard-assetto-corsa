@@ -38,15 +38,15 @@ class DriverWidget:
         ac.setSize(self.teamLabel, 6, 45)
 
         self.nameLabel = ac.addLabel(self.window, "")
-        ac.setPosition(self.nameLabel, 90, 4)
-        ac.setFontSize(self.nameLabel, 26)
+        ac.setPosition(self.nameLabel, 90, 9)
+        ac.setFontSize(self.nameLabel, 23)
         ac.setCustomFont(self.nameLabel, FC.FONT_NAME, 0, 1)
         ac.setFontColor(self.nameLabel, 0.86, 0.86, 0.86, 1)
         ac.setFontAlignment(self.nameLabel, "left")
 
         self.teamNameLabel = ac.addLabel(self.window, "")
-        ac.setPosition(self.teamNameLabel, 90, 35)
-        ac.setFontSize(self.teamNameLabel, 20)
+        ac.setPosition(self.teamNameLabel, 90, 40)
+        ac.setFontSize(self.teamNameLabel, 18)
         ac.setCustomFont(self.teamNameLabel, FC.FONT_NAME, 0, 1)
         ac.setFontColor(self.teamNameLabel, 0.66, 0.66, 0.66, 1)
         ac.setFontAlignment(self.teamNameLabel, "left")
@@ -69,42 +69,42 @@ class DriverWidget:
         ac.setBackgroundTexture(self.extendedBackgroundTexture, FC.DRIVER_WIDGET_EXTENDED_BACKGROUND);
 
         self.startedTextLabel = ac.addLabel(self.window, "STARTED")
-        ac.setPosition(self.startedTextLabel, 70, 130)
+        ac.setPosition(self.startedTextLabel, 70, 135)
         ac.setFontSize(self.startedTextLabel, 18)
         ac.setCustomFont(self.startedTextLabel, FC.FONT_NAME, 0, 0)
         ac.setFontColor(self.startedTextLabel, 0.86, 0.86, 0.86, 1)
         ac.setFontAlignment(self.startedTextLabel, "center")
 
         self.placesTextLabel = ac.addLabel(self.window, "PLACES")
-        ac.setPosition(self.placesTextLabel, 175, 130)
+        ac.setPosition(self.placesTextLabel, 175, 135)
         ac.setFontSize(self.placesTextLabel, 18)
         ac.setCustomFont(self.placesTextLabel, FC.FONT_NAME, 0, 0)
         ac.setFontColor(self.placesTextLabel, 0.86, 0.86, 0.86, 1)
         ac.setFontAlignment(self.placesTextLabel, "center")
 
         self.tyreTextLabel = ac.addLabel(self.window, "TYRES")
-        ac.setPosition(self.tyreTextLabel, 285, 130)
+        ac.setPosition(self.tyreTextLabel, 285, 135)
         ac.setFontSize(self.tyreTextLabel, 18)
         ac.setCustomFont(self.tyreTextLabel, FC.FONT_NAME, 0, 0)
         ac.setFontColor(self.tyreTextLabel, 0.86, 0.86, 0.86, 1)
         ac.setFontAlignment(self.tyreTextLabel, "center")
 
         self.pitStopTextLabel = ac.addLabel(self.window, "PIT STOPS")
-        ac.setPosition(self.pitStopTextLabel, 395, 130)
+        ac.setPosition(self.pitStopTextLabel, 395, 135)
         ac.setFontSize(self.pitStopTextLabel, 18)
         ac.setCustomFont(self.pitStopTextLabel, FC.FONT_NAME, 0, 0)
         ac.setFontColor(self.pitStopTextLabel, 0.86, 0.86, 0.86, 1)
         ac.setFontAlignment(self.pitStopTextLabel, "center")
 
         self.startedLabel = ac.addLabel(self.window, "")
-        ac.setPosition(self.startedLabel, 70, 80)
+        ac.setPosition(self.startedLabel, 70, 85)
         ac.setFontSize(self.startedLabel, 34)
         ac.setCustomFont(self.startedLabel, FC.FONT_NAME, 0, 1)
         ac.setFontColor(self.startedLabel, 0.86, 0.86, 0.86, 1)
         ac.setFontAlignment(self.startedLabel, "center")
 
         self.placesLabel = ac.addLabel(self.window, "")
-        ac.setPosition(self.placesLabel, 175, 80)
+        ac.setPosition(self.placesLabel, 175, 85)
         ac.setFontSize(self.placesLabel, 34)
         ac.setCustomFont(self.placesLabel, FC.FONT_NAME, 0, 1)
         ac.setFontColor(self.placesLabel, 0.86, 0.86, 0.86, 1)
@@ -119,7 +119,7 @@ class DriverWidget:
         ac.setSize(self.tyreLabel, 46, 46)
 
         self.pitStopLabel = ac.addLabel(self.window, "")
-        ac.setPosition(self.pitStopLabel, 395, 80)
+        ac.setPosition(self.pitStopLabel, 395, 85)
         ac.setFontSize(self.pitStopLabel, 34)
         ac.setCustomFont(self.pitStopLabel, FC.FONT_NAME, 0, 1)
         ac.setFontColor(self.pitStopLabel, 0.86, 0.86, 0.86, 1)
@@ -169,16 +169,16 @@ class DriverWidget:
             if places == 0:
                 ac.setFontColor(self.placesLabel, 0.86, 0.86, 0.86, 1)
                 ac.setVisible(self.placesIconLabel, 0)
-                ac.setPosition(self.placesLabel, 175, 80)
+                ac.setPosition(self.placesLabel, 175, 85)
             elif places > 0:
                 ac.setFontColor(self.placesLabel, 0.3, .85, .28, 1) # green
                 ac.setBackgroundTexture(self.placesIconLabel, FC.POSITION_GAINED)
-                ac.setPosition(self.placesLabel, 190, 80)
+                ac.setPosition(self.placesLabel, 190, 85)
                 ac.setVisible(self.placesIconLabel, 1)
             elif places < 0:
                 ac.setFontColor(self.placesLabel, 0.97, .25, .25, 1) # red
                 ac.setBackgroundTexture(self.placesIconLabel, FC.POSITION_LOST)
-                ac.setPosition(self.placesLabel, 190, 80)
+                ac.setPosition(self.placesLabel, 190, 85)
                 ac.setVisible(self.placesIconLabel, 1)
             ac.setText(self.placesLabel, str(abs(places)))
 

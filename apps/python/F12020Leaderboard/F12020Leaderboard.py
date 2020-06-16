@@ -62,6 +62,7 @@ class Driver: # class to hold driver information
         self.timeDiff = 0
         self.out = False
         self.current_lap = 0
+        self.best_lap = MAX_LAP_TIME
 
     def get_split_id(self, spline):
         return int(spline//(1/self.n_splits))
@@ -168,6 +169,74 @@ def acUpdate(deltaT):
     # ================================================================
     if info.graphics.session == 2:
 
+        # 10 times per second
+        if timer2 > 0.1:
+            timer2 = 0
+
+            # =============================
+            # SAVE SPLIT TIMES
+            for d in drivers:
+                if ac.isConnected(d.id) == 0: continue
+                current_split = d.get_split_id(ac.getCarState(d.id, acsys.CS.NormalizedSplinePosition))
+                if d.current_split != current_split: # save split time at each split of the track
+                    d.split_times[current_split-1] = time.time()
+                    d.current_split = current_split
+
+        # 3 times per second
+        if timer1 > 0.3:
+            # CHECK RACE RESTART
+            if race_started and info.graphics.completedLaps == 0 and info.graphics.iCurrentTime == 0:
+                race_started = False
+
+            # CHECK RACE START
+            if not race_started and info.graphics.iCurrentTime > 0:
+                # RESET THINGS
+                fastest_lap = MAX_LAP_TIME
+                LeaderboardRow.FASTEST_LAP_ID = -1
+
+                race_started = True
+                for d in drivers:
+                    d.starting_position = ac.getCarLeaderboardPosition(d.id)
+                    d.tyre = ac.getCarTyreCompound(d.id)
+                    d.pits = 0
+                replay_file = setup_replay_file(drivers, info.graphics.numberOfLaps) # save starting info on the drivers
+
+            # ============================
+            # POSITION UPDATE
+            for i in range(totalDrivers):
+                pos = ac.getCarRealTimeLeaderboardPosition(i)
+                connected = ac.isConnected(i)
+                if connected == 0 and not drivers[i].out: # mark unconnected drivers
+                    leaderboard[pos].mark_out()
+                    drivers[i].out = True
+                elif connected == 1 and drivers[i].out:
+                    leaderboard[pos].mark_in()
+                    drivers[i].out = False
+                if connected == 1:
+                    leaderboard[pos].update_name(i)
+
+                # OVERTAKE
+                if pos != drivers[i].position: # there was an overtake
+                    drivers[i].timer = FC.OVERTAKE_POSITION_LABEL_TIMER # set timer
+                    if pos < drivers[i].position:
+                        leaderboard[pos].mark_green_position()
+                    elif pos > drivers[i].position:
+                        leaderboard[pos].mark_red_position()
+                elif drivers[i].timer <= 0:
+                    leaderboard[pos].mark_white_position()
+                else:
+                    drivers[i].timer -= timer1
+                drivers[i].position = pos
+                # END OVERTAKE
+
+            # ============================
+            # FASTEST LAP BANNER TIMER
+            if fastest_lap_banner.timer > 0:
+                fastest_lap_banner.timer -= timer1
+                fastest_lap_banner.hide()
+
+            timer1 = 0
+
         # Once per second
         if timer0 > 1:
             timer0 = 0
@@ -207,7 +276,7 @@ def acUpdate(deltaT):
                     if lap != 0 and lap < fastest_lap:
                         fastest_lap = lap
                         fastest_lap_banner.show(lap, ac.getDriverName(d.id))
-                        LeaderboardRow.FASTEST_LAP_ID = d.id;
+                        LeaderboardRow.FASTEST_LAP_ID = d.id
                         if replay_file:
                             write_fastest_lap(replay_file, info.graphics.completedLaps, info.graphics.iCurrentTime, d, fastest_lap)
                 for row in leaderboard:
@@ -240,42 +309,56 @@ def acUpdate(deltaT):
                 write_driver_info(replay_file, info.graphics.completedLaps, info.graphics.iCurrentTime, drivers)
             # ========================================================
 
+
+    # ================================================================
+    #                            QUALIFY
+    # ================================================================
+    elif info.graphics.session == 1:
+        ac.console("HERE")
+
         # 3 times per second
         if timer1 > 0.3:
-            if not race_started:
-                if info.graphics.iCurrentTime > 0:
-                    race_started = True
-                    for d in drivers:
-                        d.starting_position = ac.getCarLeaderboardPosition(d.id)
-                        d.tyre = ac.getCarTyreCompound(d.id)
-                    replay_file = setup_replay_file(drivers, info.graphics.numberOfLaps) # save starting info on the drivers
-
-            # ============================
-            # POSITION UPDATE
+        # TODO CHECK QUALIFY RESTART ?
+        # fastest_lap = MAX_LAP_TIME
+        # LeaderboardRow.FASTEST_LAP_ID = -1
             for i in range(totalDrivers):
-                pos = ac.getCarRealTimeLeaderboardPosition(i)
-                connected = ac.isConnected(i)
-                if connected == 0 and not drivers[i].out: # mark unconnected drivers
-                    leaderboard[pos].mark_out()
-                    drivers[i].out = True
-                elif connected == 1 and drivers[i].out:
-                    leaderboard[pos].mark_in()
-                    drivers[i].out = False
-                if connected == 1:
-                    leaderboard[pos].update_name(i)
+                lap = ac.getCarState(i, acsys.CS.BestLap)
+                if lap != 0:
+                    fastest_lap = lap
+                    drivers[i].best_lap = lap
+                if lap < fastest_lap:
+                    fastest_lap_banner.show(drivers[i].best_lap, ac.getDriverName(i))
 
-                # OVERTAKE
-                if pos != drivers[i].position: # there was an overtake
-                    drivers[i].timer = FC.OVERTAKE_POSITION_LABEL_TIMER # set timer
-                    if pos < drivers[i].position:
-                        leaderboard[pos].mark_green_position()
-                    elif pos > drivers[i].position:
-                        leaderboard[pos].mark_red_position()
-                elif drivers[i].timer <= 0:
-                    leaderboard[pos].mark_white_position()
+            dPosition = sorted(drivers, key=lambda x: x.best_lap)
+            for i in range(totalDrivers):
+                connected = ac.isConnected(i)
+                if connected == 0 and not dPosition[i].out: # mark unconnected drivers
+                    leaderboard[i].mark_out()
+                    dPosition[i].out = True
+                elif connected == 1 and dPosition[i].out:
+                    leaderboard[i].mark_in()
+                    dPosition[i].out = False
+                if connected == 1:
+                    leaderboard[i].update_name(dPosition[i].id)
+                    if dPosition[i].best_lap == MAX_LAP_TIME:
+                        leaderboard[i].update_time("NO TIME")
+                    elif i == 0:
+                        leaderboard[i].update_time(time_to_string(dPosition[i].best_lap))
+                    else:
+                        timeDiff = dPosition[i].best_lap - dPosition[0].best_lap
+                        leaderboard[i].update_time("+" + time_to_string(timeDiff))
+
+                if i != dPosition[i].position: # there was an overtake on this driver
+                    dPosition[i].timer = FC.OVERTAKE_POSITION_LABEL_TIMER
+                    if i < dPosition[i].position:
+                        leaderboard[i].mark_green_position()
+                    elif i > dPosition[i].position:
+                        leaderboard[i].mark_red_position()
+                elif dPosition[i].timer <= 0:
+                    leaderboard[i].mark_white_position()
                 else:
-                    drivers[i].timer -= timer1
-                drivers[i].position = pos
+                    dPosition[i].timer -= timer1
+                dPosition[i].position = i
                 # END OVERTAKE
 
             # ============================
@@ -283,79 +366,25 @@ def acUpdate(deltaT):
             if fastest_lap_banner.timer > 0:
                 fastest_lap_banner.timer -= timer1
                 fastest_lap_banner.hide()
-
+            
             timer1 = 0
 
-        # 10 times per second
-        if timer2 > 0.1:
-            timer2 = 0
-
-            # =============================
-            # SAVE SPLIT TIMES
-            for d in drivers:
-                if ac.isConnected(d.id) == 0: continue
-                current_split = d.get_split_id(ac.getCarState(d.id, acsys.CS.NormalizedSplinePosition))
-                if d.current_split != current_split: # save split time at each split of the track
-                    d.split_times[current_split-1] = time.time()
-                    d.current_split = current_split
-
-    # ================================================================
-    #                            QUALIFY
-    # ================================================================
-    elif info.graphics.session == 1:
         # Once per second
         if timer0 > 1:
             timer0 = 0
             ac.setBackgroundOpacity(leaderboardWindow, 0)
             ac.setBackgroundOpacity(driverWidget.window, 0)
             ac.setBackgroundOpacity(fastest_lap_banner.window, 0)
+
+            driverWidget.hide()
+
 
     # ================================================================
     #                            REPLAYS
     # ================================================================
     elif info.graphics.status == 1:
-        # Once per second
-        if timer0 > 1:
-            timer0 = 0
-            ac.setBackgroundOpacity(leaderboardWindow, 0)
-            ac.setBackgroundOpacity(driverWidget.window, 0)
-            ac.setBackgroundOpacity(fastest_lap_banner.window, 0)
 
-            # ============================
-            # SERVER LAP
-            if replay_data:
-                lc = max((drivers[i].current_lap for i in range(totalDrivers))) + 1
-                if lc >= replay_data['nLaps']:
-                    ac.setText(lapCountTimerLabel, "FINAL LAP")
-                    ac.setFontColor(lapCountTimerLabel, 1,0,0,1)
-                else:
-                    ac.setText(lapCountTimerLabel, "%d / %d" % (lc, replay_data['nLaps']))
-                    ac.setFontColor(lapCountTimerLabel, 0.86, 0.86, 0.86, 1)
-
-            # ============================
-            # PITS MARKER
-            for row in leaderboard:
-                if ac.isCarInPitline(row.driverId) == 1:
-                    row.mark_enter_pits()
-                else:
-                    row.mark_left_pits()
-
-            # ============================
-            # DRIVER WIDGET UPDATE
-            if replay_started:
-                id = ac.getFocusedCar()
-                driverWidget.show(id, drivers[id].position, drivers[id].starting_position, drivers[id].tyre, drivers[id].pits)
-            else:
-                driverWidget.hide()
-
-            # ============================
-            # UPDATE TIMES
-            if replay_data:
-                for row in leaderboard:
-                    row.update_time("+" + time_to_string(drivers[row.driverId].timeDiff*1000))
-                    if row.row == 0:
-                        row.update_time("Interval") # Force it
-
+        # three times per second
         if timer1 > 0.3:
             if not replay_started:
                 if info.graphics.iCurrentTime > 0:
@@ -399,15 +428,54 @@ def acUpdate(deltaT):
             
             timer1 = 0
 
+        # Once per second
+        if timer0 > 1:
+            timer0 = 0
+            ac.setBackgroundOpacity(leaderboardWindow, 0)
+            ac.setBackgroundOpacity(driverWidget.window, 0)
+            ac.setBackgroundOpacity(fastest_lap_banner.window, 0)
+
+            # ============================
+            # SERVER LAP
+            if replay_data:
+                lc = max((drivers[i].current_lap for i in range(totalDrivers))) + 1
+                if lc >= replay_data['nLaps']:
+                    ac.setText(lapCountTimerLabel, "FINAL LAP")
+                    ac.setFontColor(lapCountTimerLabel, 1,0,0,1)
+                else:
+                    ac.setText(lapCountTimerLabel, "%d / %d" % (lc, replay_data['nLaps']))
+                    ac.setFontColor(lapCountTimerLabel, 0.86, 0.86, 0.86, 1)
+
+            # ============================
+            # PITS MARKER
+            for row in leaderboard:
+                if ac.isCarInPitline(row.driverId) == 1:
+                    row.mark_enter_pits()
+                else:
+                    row.mark_left_pits()
+
+            # ============================
+            # DRIVER WIDGET UPDATE
+            if replay_started:
+                id = ac.getFocusedCar()
+                driverWidget.show(id, drivers[id].position, drivers[id].starting_position, drivers[id].tyre, drivers[id].pits)
+            else:
+                driverWidget.hide()
+
+            # ============================
+            # UPDATE TIMES
+            if replay_data:
+                for row in leaderboard:
+                    row.update_time("+" + time_to_string(drivers[row.driverId].timeDiff*1000))
+                    if row.row == 0:
+                        row.update_time("Interval") # Force it
+
     # END UPDATE
 
 def acShutdown():
     global replay_file
     if replay_file:
         replay_file.close()
-
-def reset_variables():
-    pass
 
 def write_driver_info(replay_file, laps, time, drivers):
     data = "U %d %d " % (laps, time)

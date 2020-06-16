@@ -14,8 +14,8 @@ During the race it saves a file that can be read when replaying the race to be a
 Each line contains the following information about each driver in order separated by a colon "`:`"
 
 - Team Name
-- Name of the image files inside `teams/` and `cars/` with the team color (without file extension)
-- Name of the image files inside `numbers` (without file extension)
+- Name of the image files inside `ui/teams/` and `ui/cars/` with the team color (without file extension)
+- Name of the image files inside `ui/numbers/` (without file extension)
 - Driver Name
 
 

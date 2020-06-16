@@ -33,6 +33,11 @@ fastest_lap = MAX_LAP_TIME
 
 race_started = False
 replay_started = False
+quali_started = False
+
+leaderboard_displayed = False
+
+qualify_session_time = 0
 
 # REPLAY FILE
 replay_file = None
@@ -46,6 +51,9 @@ fastest_lap_banner = None
 # LABELS
 leaderboard = None
 lapCountTimerLabel = None
+leaderboardBaseLabel = None
+leaderboardInfoBackgroundLabel = None
+leaderboardBackgroundLabel = None
 
 class Driver: # class to hold driver information
     def __init__(self, id, n_splits):
@@ -75,7 +83,7 @@ def acMain(ac_version):
     global leaderboardWindow, driverWidget, fastest_lap_banner
     # LABELS
     global leaderboard
-    global lapCountTimerLabel
+    global lapCountTimerLabel, leaderboardBaseLabel, leaderboardInfoBackgroundLabel, leaderboardBackgroundLabel
 
     totalDrivers = ac.getCarsCount()
     n_splits = ac.getTrackLength(0) / FC.TRACK_SECTION_LENGTH
@@ -116,10 +124,10 @@ def acMain(ac_version):
 
     # ===============================
     # Info Background
-    infoBackgroundLabel = ac.addLabel(leaderboardWindow, "")
-    ac.setPosition(infoBackgroundLabel, w, h)
-    ac.setSize(infoBackgroundLabel, 110, totalDrivers*LeaderboardRow.ROW_HEIGHT + 2)
-    ac.setBackgroundTexture(infoBackgroundLabel, FC.LEADERBOARD_INFO_BACKGROUNG)
+    leaderboardInfoBackgroundLabel = ac.addLabel(leaderboardWindow, "")
+    ac.setPosition(leaderboardInfoBackgroundLabel, w, h)
+    ac.setSize(leaderboardInfoBackgroundLabel, 110, totalDrivers*LeaderboardRow.ROW_HEIGHT + 2)
+    ac.setBackgroundTexture(leaderboardInfoBackgroundLabel, FC.LEADERBOARD_INFO_BACKGROUNG)
 
     # ===============================
     # FastestLap Banner
@@ -145,7 +153,9 @@ def acUpdate(deltaT):
     global drivers
     global fastest_lap
 
-    global race_started, replay_started
+    global race_started, replay_started, quali_started
+
+    global qualify_session_time
 
     global replay_file
     global replay_data
@@ -155,7 +165,7 @@ def acUpdate(deltaT):
 
     # LABELS
     global leaderboard
-    global lapCountTimerLabel
+    global lapCountTimerLabel, leaderboardBaseLabel, leaderboardInfoBackgroundLabel, leaderboardBackgroundLabel
 
     # ============================
     # UPDATE TIMERS
@@ -193,8 +203,12 @@ def acUpdate(deltaT):
                 # RESET THINGS
                 fastest_lap = MAX_LAP_TIME
                 LeaderboardRow.FASTEST_LAP_ID = -1
+                # in case we are coming from a qualify
+                ac.setFontColor(lapCountTimerLabel, 0.86, 0.86, 0.86, 1)
+                ac.setBackgroundTexture(leaderboardBaseLabel, FC.LEADERBOARD_BASE_RACE)
 
                 race_started = True
+                quali_started = False
                 for d in drivers:
                     d.starting_position = ac.getCarLeaderboardPosition(d.id)
                     d.tyre = ac.getCarTyreCompound(d.id)
@@ -314,23 +328,41 @@ def acUpdate(deltaT):
     #                            QUALIFY
     # ================================================================
     elif info.graphics.session == 1:
-        ac.console("HERE")
 
         # 3 times per second
         if timer1 > 0.3:
-        # TODO CHECK QUALIFY RESTART ?
-        # fastest_lap = MAX_LAP_TIME
-        # LeaderboardRow.FASTEST_LAP_ID = -1
+            # =============================================
+            # QUALIFY RESTART
+            if quali_started and qualify_session_time - info.graphics.sessionTimeLeft < 1:
+                quali_started = False
+
+            # =============================================
+            # QUALIFY START
+            if not quali_started:
+                show_leaderboard()
+                ac.setBackgroundTexture(leaderboardBaseLabel, FC.LEADERBOARD_BASE_QUALI)
+                ac.setFontColor(lapCountTimerLabel, 0.86, 0.86, 0.86, 1)
+                qualify_session_time = info.graphics.sessionTimeLeft
+                fastest_lap = MAX_LAP_TIME
+                LeaderboardRow.FASTEST_LAP_ID = -1
+                quali_started = True
+                race_started = False
+
+            # =============================================
+            # SAVE BEST LAPS FOR EACH DRIVER
             for i in range(totalDrivers):
                 lap = ac.getCarState(i, acsys.CS.BestLap)
                 if lap != 0:
-                    fastest_lap = lap
                     drivers[i].best_lap = lap
-                if lap < fastest_lap:
-                    fastest_lap_banner.show(drivers[i].best_lap, ac.getDriverName(i))
+                if lap != 0 and lap < fastest_lap:
+                    fastest_lap = lap
+                    fastest_lap_banner.show(lap, ac.getDriverName(i))
 
+            # =============================================
+            # MANAGE LEADERBOARD
             dPosition = sorted(drivers, key=lambda x: x.best_lap)
             for i in range(totalDrivers):
+                # MARK IN/OUT DRIVERS
                 connected = ac.isConnected(i)
                 if connected == 0 and not dPosition[i].out: # mark unconnected drivers
                     leaderboard[i].mark_out()
@@ -348,6 +380,7 @@ def acUpdate(deltaT):
                         timeDiff = dPosition[i].best_lap - dPosition[0].best_lap
                         leaderboard[i].update_time("+" + time_to_string(timeDiff))
 
+                # OVERTAKES
                 if i != dPosition[i].position: # there was an overtake on this driver
                     dPosition[i].timer = FC.OVERTAKE_POSITION_LABEL_TIMER
                     if i < dPosition[i].position:
@@ -375,6 +408,12 @@ def acUpdate(deltaT):
             ac.setBackgroundOpacity(leaderboardWindow, 0)
             ac.setBackgroundOpacity(driverWidget.window, 0)
             ac.setBackgroundOpacity(fastest_lap_banner.window, 0)
+
+            if quali_started:
+                ac.console(str(info.graphics.sessionTimeLeft))
+                ac.setText(lapCountTimerLabel, time_to_string(info.graphics.sessionTimeLeft)[:-4])
+                if info.graphics.sessionTimeLeft < qualify_session_time / 5:
+                    ac.setFontColor(lapCountTimerLabel, 1,0,0,1)
 
             driverWidget.hide()
 
@@ -476,6 +515,18 @@ def acShutdown():
     global replay_file
     if replay_file:
         replay_file.close()
+
+def hide_leaderboard():
+    global leaderboard_displayed
+    global leaderboard
+    global lapCountTimerLabel, leaderboardBaseLabel, leaderboardInfoBackgroundLabel, leaderboardBackgroundLabel
+    if not leaderboard_displayed: return
+
+def show_leaderboard():
+    global leaderboard_displayed
+    global leaderboard
+    global lapCountTimerLabel, leaderboardBaseLabel, leaderboardInfoBackgroundLabel, leaderboardBackgroundLabel
+    if leaderboard_displayed: return
 
 def write_driver_info(replay_file, laps, time, drivers):
     data = "U %d %d " % (laps, time)

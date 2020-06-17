@@ -47,7 +47,7 @@ class FastestLapBanner:
         ac.setFontColor(self.timeLabel, 0.86, 0.86, 0.86, 1)
         ac.setFontAlignment(self.timeLabel, "right")
 
-    def show(self, time, driver_name):
+    def show(self, time, driver_name, timer = FC.FASTEST_LAP_DISPLAY_TIME):
         ac.setText(self.nameLabel, driver_name.split()[0])
         ac.setText(self.lastNameLabel, driver_name.split()[-1].upper())
         ac.setText(self.timeLabel, time_to_string(time))
@@ -56,7 +56,7 @@ class FastestLapBanner:
         ac.setVisible(self.nameLabel, 1)
         ac.setVisible(self.lastNameLabel, 1)
         ac.setVisible(self.timeLabel, 1)
-        self.timer = FC.FASTEST_LAP_DISPLAY_TIME
+        self.timer = timer
 
     def hide(self):
         if self.timer > 0: return

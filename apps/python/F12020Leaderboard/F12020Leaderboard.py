@@ -137,6 +137,7 @@ def acMain(ac_version):
     leaderboard = [None] * totalDrivers
     for i in range(totalDrivers):
         leaderboard[i] = LeaderboardRow(leaderboardWindow, i)
+    
 
     return FC.APP_NAME
 
@@ -264,11 +265,10 @@ def acUpdate(deltaT):
                 drivers[i].current_lap = ac.getCarState(i, acsys.CS.LapCount)
             lc = max((drivers[i].current_lap for i in range(totalDrivers))) + 1
             if lc >= info.graphics.numberOfLaps:
-                ac.setText(lapCountTimerLabel, "FINAL LAP")
-                ac.setFontColor(lapCountTimerLabel, 1,0,0,1)
+                ac.setVisible(lapCountTimerLabel, 0)
+                ac.setBackgroundTexture(leaderboardBaseLabel, FC.LEADERBOARD_FINAL_LAP)
             else:
                 ac.setText(lapCountTimerLabel, "%d / %d" % (lc, info.graphics.numberOfLaps))
-                ac.setFontColor(lapCountTimerLabel, 0.86, 0.86, 0.86, 1)
 
             # ===========================
             # CALCULATE TIME DIFERENCES
@@ -342,7 +342,6 @@ def acUpdate(deltaT):
             # =============================================
             # QUALIFY START
             if not quali_started:
-                show_leaderboard()
                 ac.setBackgroundTexture(leaderboardBaseLabel, FC.LEADERBOARD_BASE_QUALI)
                 ac.setFontColor(lapCountTimerLabel, 0.86, 0.86, 0.86, 1)
                 qualify_session_time = info.graphics.sessionTimeLeft
@@ -478,15 +477,24 @@ def acUpdate(deltaT):
             ac.setBackgroundOpacity(fastest_lap_banner.window, 0)
 
             # ============================
+            # GET FASTEST LAP UPDATE
+            if replay_data:
+                fl_data = lookup_fastest_lap(info.graphics.completedLaps, info.graphics.iCurrentTime, replay_data)
+                if fl_data:
+                    display_time = FC.FASTEST_LAP_DISPLAY_TIME - (info.graphics.iCurrentTime - fl_data[0]) / 1000
+                    fastest_lap_banner.show(fl_data[2], ac.getDriverName(fl_data[1]), timer=display_time) # display only for the time left
+
+            # ============================
             # SERVER LAP
             if replay_data:
                 lc = max((drivers[i].current_lap for i in range(totalDrivers))) + 1
                 if lc >= replay_data['nLaps']:
-                    ac.setText(lapCountTimerLabel, "FINAL LAP")
-                    ac.setFontColor(lapCountTimerLabel, 1,0,0,1)
+                    ac.setVisible(lapCountTimerLabel, 0)
+                    ac.setBackgroundTexture(leaderboardBaseLabel, FC.LEADERBOARD_FINAL_LAP)
                 else:
                     ac.setText(lapCountTimerLabel, "%d / %d" % (lc, replay_data['nLaps']))
-                    ac.setFontColor(lapCountTimerLabel, 0.86, 0.86, 0.86, 1)
+                    ac.setVisible(lapCountTimerLabel, 1)
+                    ac.setBackgroundTexture(leaderboardBaseLabel, FC.LEADERBOARD_BASE_RACE)
 
             # ============================
             # PITS MARKER
@@ -541,7 +549,8 @@ def write_fastest_lap(replay_file, laps, time, driver, fastest_lap):
     replay_file.write("FL %d;%d %d;%f\n" % (laps, time, driver.id, fastest_lap))
 
 def setup_replay_file(drivers, nLaps):
-    replay_file = open(FC.REPLAY_DIR + "replayFile.txt", "w")
+    filename = "replay_%s_%s.txt" % (ac.getCarName(0), ac.getTrackName(0))
+    replay_file = open(FC.REPLAY_DIR + filename, "w")
     data = "START %d %d " % (len(drivers), nLaps)
     for d in drivers:
         data += "%d;%s " % (d.starting_position, d.tyre)
@@ -549,8 +558,17 @@ def setup_replay_file(drivers, nLaps):
     return replay_file
 
 def load_replay_file(drivers):
+    '''Load replay data into a dictionary that follows the following structure
+    {'LAP_NUMBER': [[TIME [UPDATE DATA]],
+                    [TIME [UPDATE DATA]], ... ]
+     'FL' : {'LAP_NUMBER' : [[TIME, DRIVER_ID, FASTEST_LAP],
+                             [TIME, DRIVER_ID, FASTEST_LAP]...]
+            }
+    }
+    '''
     try:
-        with open(FC.REPLAY_DIR + "replayFile.txt", "r") as rf:
+        filename = "replay_%s_%s.txt" % (ac.getCarName(0), ac.getTrackName(0))
+        with open(FC.REPLAY_DIR + filename, "r") as rf:
             data = {}
             line = next(rf).split()
             if line[0] != "START":
@@ -573,17 +591,25 @@ def load_replay_file(drivers):
                     if int(line[1]) not in data:
                         data[int(line[1])] = []
                     data[int(line[1])].append(update)
-                elif line[0] == "FL": # TODO fastest lap
-                    pass
+                elif line[0] == "FL":
+                    laps, time = line[1].split(';')
+                    id, fastest_lap = line[2].split(';')
+                    if 'FL' not in data:
+                        data['FL'] = {}
+                    if int(laps) not in data['FL']:
+                        data['FL'][int(laps)] = []
+                    data['FL'][int(laps)].append([float(time), int(id), float(fastest_lap)])
                 else:
                     ac.log("Replay file has wrong tag '%s'." % line[0])
                     return
             return data
-
     except FileNotFoundError:
         ac.log("Replay File not found.")
 
 def lookup_data(lap, time, replay_data, drivers):
+    '''Load replay data into drivers list.
+    Returns list with new positions, to allow verification of overtakes
+    '''
     it = bisect.bisect_left(replay_data[lap], [time])
     if it > len(replay_data[lap]): return
     data = replay_data[lap][it]
@@ -594,4 +620,16 @@ def lookup_data(lap, time, replay_data, drivers):
         drivers[i].out = data[i+1][4]
         drivers[i].current_lap = data[i+1][5]
     return [data[i+1][0] for i in range(len(drivers))] # return new positions
+
+def lookup_fastest_lap(lap, time, replay_data):
+    '''Returns a list with the format [time, driverId, fastest_lap_time]'''
+    if 'FL' in replay_data:
+        if lap in replay_data['FL']:
+            it = bisect.bisect_left(replay_data['FL'][lap], [time])
+            if it == 0: return None
+            if (time - replay_data['FL'][lap][it-1][0])/1000 < FC.FASTEST_LAP_DISPLAY_TIME:
+                return replay_data['FL'][lap][it-1]
+    return None
+            
+
 

@@ -38,7 +38,7 @@ class DriverWidget:
         ac.setSize(self.teamLabel, 6, 45)
 
         self.nameLabel = ac.addLabel(self.window, "")
-        ac.setPosition(self.nameLabel, 90, 9)
+        ac.setPosition(self.nameLabel, 90, 11)
         ac.setFontSize(self.nameLabel, 23)
         ac.setCustomFont(self.nameLabel, FC.FONT_NAME, 0, 1)
         ac.setFontColor(self.nameLabel, 0.86, 0.86, 0.86, 1)
@@ -97,14 +97,14 @@ class DriverWidget:
         ac.setFontAlignment(self.pitStopTextLabel, "center")
 
         self.startedLabel = ac.addLabel(self.window, "")
-        ac.setPosition(self.startedLabel, 70, 85)
+        ac.setPosition(self.startedLabel, 70, 86)
         ac.setFontSize(self.startedLabel, 34)
         ac.setCustomFont(self.startedLabel, FC.FONT_NAME, 0, 1)
         ac.setFontColor(self.startedLabel, 0.86, 0.86, 0.86, 1)
         ac.setFontAlignment(self.startedLabel, "center")
 
         self.placesLabel = ac.addLabel(self.window, "")
-        ac.setPosition(self.placesLabel, 175, 85)
+        ac.setPosition(self.placesLabel, 175, 86)
         ac.setFontSize(self.placesLabel, 34)
         ac.setCustomFont(self.placesLabel, FC.FONT_NAME, 0, 1)
         ac.setFontColor(self.placesLabel, 0.86, 0.86, 0.86, 1)
@@ -119,7 +119,7 @@ class DriverWidget:
         ac.setSize(self.tyreLabel, 46, 46)
 
         self.pitStopLabel = ac.addLabel(self.window, "")
-        ac.setPosition(self.pitStopLabel, 395, 85)
+        ac.setPosition(self.pitStopLabel, 395, 86)
         ac.setFontSize(self.pitStopLabel, 34)
         ac.setCustomFont(self.pitStopLabel, FC.FONT_NAME, 0, 1)
         ac.setFontColor(self.pitStopLabel, 0.86, 0.86, 0.86, 1)

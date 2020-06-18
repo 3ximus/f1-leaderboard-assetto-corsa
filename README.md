@@ -4,7 +4,7 @@ App for our assetto corsa Formula 1 championship.
 
 Can be tweaked for other championships using the "teams.ini" file.
 
-During the race it saves a file that can be read when replaying the race to be able to load the whole UI again.
+During the race a file is saved, that will be read by the app during a race replay to be able to load the whole UI again. However currently **it only saves different files for each combination of track and car**.
 
 ## STILL A WORK IN PROGRESS!!
 

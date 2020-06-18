@@ -211,7 +211,7 @@ class DriverWidget:
                 if u == "3": subscript = "rd"
                 else: subscript = "th"
                 ac.setText(self.startedLabel, str(starting_position) + subscript)
-                ac.setBackgroundTexture(self.tyreLabel, FC.TYRE_BASE_NAME + tyres + ".png");
+                ac.setBackgroundTexture(self.tyreLabel, FC.TYRE_DIR + tyres + ".png");
                 ac.setBackgroundTexture(self.backgroundTexture, FC.DRIVER_WIDGET_BACKGROUND_ALTERNATE)
                 ac.setVisible(self.extendedBackgroundTexture, 1)
                 ac.setVisible(self.startedLabel, 1)

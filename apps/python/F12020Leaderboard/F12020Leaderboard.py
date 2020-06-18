@@ -269,8 +269,6 @@ def acUpdate(deltaT):
             ac.setBackgroundOpacity(driverComparisonWidget.window, 0)
             ac.setBackgroundOpacity(fastest_lap_banner.window, 0)
 
-            ac.console("LAP >> " + str(ac.getCarState(0, acsys.CS.LapInvalidated)))
-
             # ============================
             # SERVER LAP
             for i in range(totalDrivers):
@@ -386,13 +384,14 @@ def acUpdate(deltaT):
             for i in range(totalDrivers):
                 # MARK IN/OUT DRIVERS
                 connected = ac.isConnected(i)
-                if connected == 0 and not dPosition[i].out: # mark unconnected drivers
+                if connected == 0: # mark unconnected drivers
                     leaderboard[i].mark_out()
                     dPosition[i].out = True
-                elif connected == 1 and dPosition[i].out:
+                    dPosition[i].best_lap += 1 # checky hack to put unconnected drivers at the bottom of the leaderboard
+                else:
                     leaderboard[i].mark_in()
                     dPosition[i].out = False
-                if connected == 1:
+
                     leaderboard[i].update_name(dPosition[i].id)
                     if dPosition[i].best_lap == MAX_LAP_TIME:
                         leaderboard[i].update_time("NO TIME")
@@ -401,7 +400,7 @@ def acUpdate(deltaT):
                     else:
                         timeDiff = dPosition[i].best_lap - dPosition[0].best_lap
                         if timeDiff > 60000:
-                            leaderboard[driver.position].update_time("+1 MIN")
+                            leaderboard[i].update_time("+1 MIN")
                         else:
                             leaderboard[i].update_time("+" + time_to_string(timeDiff))
 
@@ -435,14 +434,17 @@ def acUpdate(deltaT):
             ac.setBackgroundOpacity(driverComparisonWidget.window, 0)
             ac.setBackgroundOpacity(fastest_lap_banner.window, 0)
 
-            ac.console("LAP >> " + str(ac.getCarState(0, acsys.CS.LapInvalidated)))
-
             if quali_started:
-                ac.setText(lapCountTimerLabel, time_to_string(info.graphics.sessionTimeLeft)[:-4])
+                if info.graphics.sessionTimeLeft < 0:
+                    ac.setText(lapCountTimerLabel, "0:00")
+                else:
+                    timeText = time_to_string(info.graphics.sessionTimeLeft)[:-4]
+                    ac.setText(lapCountTimerLabel, "0:00"[:-len(timeText)] + timeText)
                 if info.graphics.sessionTimeLeft < qualify_session_time / 5:
                     ac.setFontColor(lapCountTimerLabel, 1,0,0,1)
 
             driverWidget.hide()
+            driverComparisonWidget.hide()
 
 
     # ================================================================
@@ -476,7 +478,7 @@ def acUpdate(deltaT):
                         leaderboard[pos].mark_out()
                     else:
                         leaderboard[pos].mark_in()
-                        leaderboard[pos].update_name(i)
+                    leaderboard[pos].update_name(i)
 
                     # OVERTAKE
                     if pos != drivers[i].position: # there was an overtake

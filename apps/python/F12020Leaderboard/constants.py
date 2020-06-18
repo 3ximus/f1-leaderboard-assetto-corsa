@@ -45,8 +45,10 @@ class FC:
 
     # MISCELANEOUS
     ROLEX_LOGO = "apps/python/%s/ui/rolex.png" % APP_NAME
+    SPEEDOMETER_ICON = "apps/python/%s/ui/icon.png" % APP_NAME
+    GAPS = "apps/python/%s/ui/gaps.png" % APP_NAME
 
-    TYRE_BASE_NAME = "apps/python/%s/ui/tyres/" % APP_NAME
+    TYRE_DIR = "apps/python/%s/ui/tyres/" % APP_NAME
 
     # REPLAY DIRECTORY
     REPLAY_DIR = "apps/python/%s/replays/" % APP_NAME

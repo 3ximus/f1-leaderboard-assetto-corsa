@@ -15,10 +15,11 @@ class FC:
 
     # LEADERBOARD BACKGROUNDS
     LEADERBOARD_BACKGROUND = "apps/python/%s/ui/background.png" % APP_NAME
-    LEADERBOARD_BASE_RACE = "apps/python/%s/ui/race_base.png" % APP_NAME 
-    LEADERBOARD_BASE_QUALI = "apps/python/%s/ui/quali_base.png" % APP_NAME 
-    LEADERBOARD_FINAL_LAP =  "apps/python/%s/ui/final_lap.png" % APP_NAME 
+    LEADERBOARD_BASE_RACE = "apps/python/%s/ui/race_base.png" % APP_NAME
+    LEADERBOARD_BASE_QUALI = "apps/python/%s/ui/quali_base.png" % APP_NAME
+    LEADERBOARD_FINAL_LAP =  "apps/python/%s/ui/final_lap.png" % APP_NAME
     LEADERBOARD_INFO_BACKGROUNG = "apps/python/%s/ui/background_info.png" % APP_NAME
+    LEADERBOARD_PLAYER_HIGHLIGHT = "apps/python/%s/ui/highlight.png" % APP_NAME
 
     # FASTEST LAP
     LEADERBOARD_FASTEST_LAP =  "apps/python/%s/ui/fastest_lap.png" % APP_NAME
@@ -60,6 +61,7 @@ class FC:
     TEAM_NAME = None
     DRIVER_NUMBER = None
     NUMBER_TAGS = None
+    CARS = None
 
 try:
     if not FC.TEAM_COLORS:
@@ -67,12 +69,14 @@ try:
         FC.TEAM_NAME = {}
         FC.DRIVER_NUMBER = {}
         FC.NUMBER_TAGS = {}
+        FC.CARS = {}
         with open("apps/python/%s/teams.ini" % APP_NAME) as fp:
             for line in fp:
                 line = line.split(":")
                 name = line[-1][:-1]
                 FC.TEAM_NAME[name] = line[0]
                 FC.TEAM_COLORS[name] = "apps/python/%s/ui/teams/%s.png" % (APP_NAME, line[1])
+                FC.CARS[name] = "apps/python/%s/ui/cars/%s.png" % (APP_NAME, line[1])
                 FC.DRIVER_NUMBER[name] = line[2]
                 FC.NUMBER_TAGS[name] = "apps/python/%s/ui/numbers/%s.png" % (APP_NAME, line[2])
 except FileNotFoundError:

@@ -8,6 +8,7 @@ class LeaderboardRow:
     Y_BASE = 84
     ROW_HEIGHT = 37
     FASTEST_LAP_ID = -1
+    HIGHLIGHT_ID = -1
     def __init__(self, leaderboardWindow, row):
         # SET SOME VARIABLES
         self.row = row
@@ -17,6 +18,12 @@ class LeaderboardRow:
         self.positionLabelId = 0 # 0 white, 1 red, 2 green - to prevent loading the labels all the time
         self.out = False
         self.pit = False
+
+        self.highlightLabel = ac.addLabel(leaderboardWindow, "")
+        ac.setPosition(self.highlightLabel, px-5, py-6)
+        ac.setSize(self.highlightLabel, 258, LeaderboardRow.ROW_HEIGHT+1)
+        ac.setBackgroundTexture(self.highlightLabel, FC.LEADERBOARD_PLAYER_HIGHLIGHT);
+        ac.setVisible(self.highlightLabel, 0)
 
         # CREATE LABELS
         self.positionLabel = ac.addLabel(leaderboardWindow, "")
@@ -52,9 +59,9 @@ class LeaderboardRow:
         self.fastestLapLabel = ac.addLabel(leaderboardWindow, "")
         ac.setPosition(self.fastestLapLabel, px-41, py-6)
         ac.setSize(self.fastestLapLabel, 37, 37)
-        ac.setBackgroundTexture(self.fastestLapLabel, FC.LEADERBOARD_FASTEST_LAP); 
+        ac.setBackgroundTexture(self.fastestLapLabel, FC.LEADERBOARD_FASTEST_LAP);
         ac.setVisible(self.fastestLapLabel, 0)
- 
+
         self.button = ac.addButton(leaderboardWindow, "")
         ac.setPosition(self.button, px, py-7)
         ac.setSize(self.button, 140, 38)
@@ -64,6 +71,10 @@ class LeaderboardRow:
         ac.drawBorder(self.button, 0)
 
     def update_name(self, id):
+        if id == ac.getFocusedCar():
+            ac.setVisible(self.highlightLabel, 1)
+        else:
+            ac.setVisible(self.highlightLabel, 0)
         if self.driverId == id: return # no need to update
         self.driverId = id
         self.driverName = ac.getDriverName(id)
@@ -73,11 +84,11 @@ class LeaderboardRow:
             ac.setBackgroundTexture(self.teamLabel, FC.TEAM_COLORS[self.driverName])
         except KeyError:
             ac.log("%s:Name Missing in teams.txt %s" % (FC.APP_NAME, self.driverName))
-    
+
     def update_time(self, time):
         if self.out or self.pit: return # no need to update
         ac.setText(self.infoLabel, time)
-    
+
     def mark_red_position(self):
         if self.out or self.positionLabelId == 1: return # no need to update
         ac.setBackgroundTexture(self.positionLabel, FC.LEADERBOARD_POSITION_RED_LABEL[self.row+1])
@@ -87,12 +98,12 @@ class LeaderboardRow:
         if self.out or self.positionLabelId == 2: return # no need to update
         ac.setBackgroundTexture(self.positionLabel, FC.LEADERBOARD_POSITION_GREEN_LABEL[self.row+1])
         self.positionLabelId = 2
-    
+
     def mark_white_position(self):
         if self.out or self.positionLabelId == 0: return # no need to update
         ac.setBackgroundTexture(self.positionLabel, FC.LEADERBOARD_POSITION_LABEL[self.row+1])
         self.positionLabelId = 0
-    
+
     def mark_in(self):
         if not self.out: return
         self.out = False
@@ -111,27 +122,26 @@ class LeaderboardRow:
         ac.setFontColor(self.nameLabel, .58,.53,.53, 1)
         ac.setText(self.infoLabel, "OUT")
         ac.setFontColor(self.infoLabel, .58,.53,.53, 1)
-    
+
     def mark_enter_pits(self):
         if self.out or self.pit: return
         self.pit = True
         ac.setText(self.infoLabel, "IN PIT")
         ac.setFontColor(self.infoLabel, 0,.84,1, 1)
-    
+
     def mark_left_pits(self):
         if self.out or not self.pit: return
         self.pit = False
         if self.driverId == 0:
             ac.setText(self.infoLabel, "Interval")
         ac.setFontColor(self.infoLabel, 0.86, 0.86, 0.86, 1)
-    
+
     def mark_fastest_lap(self):
-        if self.out or self.pit: return
         if self.driverId == LeaderboardRow.FASTEST_LAP_ID:
             ac.setVisible(self.fastestLapLabel, 1)
         else:
             ac.setVisible(self.fastestLapLabel, 0)
-    
+
     @staticmethod
     def on_click(*args, row=None):
         if row:

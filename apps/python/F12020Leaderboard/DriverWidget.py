@@ -34,7 +34,7 @@ class DriverWidget:
         ac.setSize(self.positionLabel, 62, 62)
 
         self.teamLabel = ac.addLabel(self.window, "")
-        ac.setPosition(self.teamLabel, 70, 10)
+        ac.setPosition(self.teamLabel, 71, 10)
         ac.setSize(self.teamLabel, 6, 45)
 
         self.nameLabel = ac.addLabel(self.window, "")
@@ -161,8 +161,11 @@ class DriverWidget:
 
     def show(self, id, pos, starting_position, tyres, pit_stops):
         ac.setBackgroundTexture(self.positionLabel, FC.LEADERBOARD_POSITION_LABEL[pos+1])
+
         ac.setVisible(self.positionLabel, 1)
-        self.visible = True
+        ac.setVisible(self.rolexLabel, 1)
+        ac.setVisible(self.backgroundTexture, 1)
+        ac.setVisible(self.nameLabel, 1)
 
         if self.extended:
             places = starting_position - (pos+1)
@@ -183,9 +186,6 @@ class DriverWidget:
             ac.setText(self.placesLabel, str(abs(places)))
 
         if self.id != id:
-            ac.setVisible(self.rolexLabel, 1)
-            ac.setVisible(self.backgroundTexture, 1)
-            ac.setVisible(self.nameLabel, 1)
             name = ac.getDriverName(id)
             sName = name.split()
             ac.setText(self.nameLabel, "%s %s" %(sName[0], sName[-1].upper()))
@@ -212,7 +212,6 @@ class DriverWidget:
                 else: subscript = "th"
                 ac.setText(self.startedLabel, str(starting_position) + subscript)
                 ac.setBackgroundTexture(self.tyreLabel, FC.TYRE_BASE_NAME + tyres + ".png");
-
                 ac.setBackgroundTexture(self.backgroundTexture, FC.DRIVER_WIDGET_BACKGROUND_ALTERNATE)
                 ac.setVisible(self.extendedBackgroundTexture, 1)
                 ac.setVisible(self.startedLabel, 1)
@@ -236,7 +235,8 @@ class DriverWidget:
                 ac.setVisible(self.pitStopTextLabel, 0)
                 ac.setVisible(self.pitStopLabel, 0)
         self.id = id
-    
+        self.visible = True
+
     @staticmethod
     def toogle_extended(*args):
         DriverWidget.extended = not DriverWidget.extended

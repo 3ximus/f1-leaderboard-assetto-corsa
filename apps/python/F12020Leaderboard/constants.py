@@ -17,6 +17,7 @@ class FC:
     LEADERBOARD_BACKGROUND = "apps/python/%s/ui/background.png" % APP_NAME
     LEADERBOARD_BASE_RACE = "apps/python/%s/ui/race_base.png" % APP_NAME
     LEADERBOARD_BASE_QUALI = "apps/python/%s/ui/quali_base.png" % APP_NAME
+    LEADERBOARD_BASE_PRACTICE = "apps/python/%s/ui/practice_base.png" % APP_NAME
     LEADERBOARD_FINAL_LAP =  "apps/python/%s/ui/final_lap.png" % APP_NAME
     LEADERBOARD_INFO_BACKGROUNG = "apps/python/%s/ui/background_info.png" % APP_NAME
     LEADERBOARD_PLAYER_HIGHLIGHT = "apps/python/%s/ui/highlight.png" % APP_NAME

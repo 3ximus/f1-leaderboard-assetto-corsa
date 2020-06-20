@@ -21,7 +21,8 @@ from LeaderboardRow import LeaderboardRow
 from FastestLapBanner import FastestLapBanner
 
 
-MAX_LAP_TIME = 999999999
+MAX_LAP_TIME = 99999999
+OVER_MAX_TIME = 999999999
 
 # TIMERS
 timer0, timer1, timer2 = 0, 0, 0
@@ -346,9 +347,9 @@ def acUpdate(deltaT):
 
 
     # ================================================================
-    #                            QUALIFY
+    #                        QUALIFY / PRACTICE
     # ================================================================
-    elif info.graphics.session == 1:
+    elif info.graphics.session == 1 or (info.graphics.session == 0 and info.graphics.status != 0):
 
         # 3 times per second
         if timer1 > 0.3:
@@ -361,6 +362,8 @@ def acUpdate(deltaT):
             # QUALIFY START
             if not quali_started:
                 ac.setBackgroundTexture(leaderboardBaseLabel, FC.LEADERBOARD_BASE_QUALI)
+                if (info.graphics.session == 0 and info.graphics.status != 0):
+                    ac.setBackgroundTexture(leaderboardBaseLabel, FC.LEADERBOARD_BASE_PRACTICE)
                 ac.setFontColor(lapCountTimerLabel, 0.86, 0.86, 0.86, 1)
                 qualify_session_time = info.graphics.sessionTimeLeft
                 fastest_lap = MAX_LAP_TIME
@@ -378,31 +381,36 @@ def acUpdate(deltaT):
                     fastest_lap = lap
                     fastest_lap_banner.show(lap, ac.getDriverName(i))
 
-            # =============================================
-            # MANAGE LEADERBOARD
-            dPosition = sorted(drivers, key=lambda x: x.best_lap)
-            for i in range(totalDrivers):
                 # MARK IN/OUT DRIVERS
                 connected = ac.isConnected(i)
                 if connected == 0: # mark unconnected drivers
+                    drivers[i].out = True
+                else:
+                    drivers[i].out = False
+                
+            # =============================================
+            # MANAGE LEADERBOARD
+
+            # Sorting: sort drivers by this order 1. in or out drivers, 2. best lap, 3. driver id
+            dPosition = sorted(drivers, key=lambda d: (d.out, d.best_lap, d.id))
+
+            for i in range(totalDrivers):
+                if dPosition[i].out:
                     leaderboard[i].mark_out()
-                    dPosition[i].out = True
-                    dPosition[i].best_lap += 1 # checky hack to put unconnected drivers at the bottom of the leaderboard
                 else:
                     leaderboard[i].mark_in()
-                    dPosition[i].out = False
 
-                    leaderboard[i].update_name(dPosition[i].id)
-                    if dPosition[i].best_lap == MAX_LAP_TIME:
-                        leaderboard[i].update_time("NO TIME")
-                    elif i == 0:
-                        leaderboard[i].update_time(time_to_string(dPosition[i].best_lap))
+                leaderboard[i].update_name(dPosition[i].id)
+                if dPosition[i].best_lap == MAX_LAP_TIME:
+                    leaderboard[i].update_time("NO TIME")
+                elif i == 0:
+                    leaderboard[i].update_time(time_to_string(dPosition[i].best_lap))
+                else:
+                    timeDiff = dPosition[i].best_lap - dPosition[0].best_lap
+                    if timeDiff > 60000:
+                        leaderboard[i].update_time("+1 MIN")
                     else:
-                        timeDiff = dPosition[i].best_lap - dPosition[0].best_lap
-                        if timeDiff > 60000:
-                            leaderboard[i].update_time("+1 MIN")
-                        else:
-                            leaderboard[i].update_time("+" + time_to_string(timeDiff))
+                        leaderboard[i].update_time("+" + time_to_string(timeDiff))
 
                 # OVERTAKES
                 if i != dPosition[i].position: # there was an overtake on this driver
@@ -536,14 +544,15 @@ def acUpdate(deltaT):
             # DRIVER WIDGET UPDATE
             if replay_started:
                 id = ac.getFocusedCar()
-                driverWidget.show(id, drivers[id].position, drivers[id].starting_position, drivers[id].tyre, drivers[id].pits)
-                if drivers[id].position == 0:
-                    driverComparisonWidget.hide()
-                else:
-                    for d in drivers: # find driver ahead
-                        if d.position == drivers[id].position - 1:
-                            driverComparisonWidget.show(d.id, d.position, id, drivers[id].position, drivers[id].timeDiff*1000)
-                            break
+                if drivers[id].position <= totalDrivers: # in case it wasnt updated yet
+                    driverWidget.show(id, drivers[id].position, drivers[id].starting_position, drivers[id].tyre, drivers[id].pits)
+                    if drivers[id].position == 0:
+                        driverComparisonWidget.hide()
+                    else:
+                        for d in drivers: # find driver ahead
+                            if d.position == drivers[id].position - 1:
+                                driverComparisonWidget.show(d.id, d.position, id, drivers[id].position, drivers[id].timeDiff*1000)
+                                break
             else:
                 driverWidget.hide()
                 driverComparisonWidget.hide()

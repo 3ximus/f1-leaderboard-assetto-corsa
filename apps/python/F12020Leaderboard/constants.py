@@ -33,11 +33,12 @@ class FC:
 
     # FLAGS
     YELLOW_FLAG = "apps/python/%s/ui/yellow_flag.png" % APP_NAME
+    BLUE_FLAG = "apps/python/%s/ui/blue_flag.png" % APP_NAME
     YELLOW_FLAG_SECTOR1 = "apps/python/%s/ui/yellow_flag_s1.png" % APP_NAME
     YELLOW_FLAG_SECTOR2 = "apps/python/%s/ui/yellow_flag_s2.png" % APP_NAME
     YELLOW_FLAG_SECTOR3 = "apps/python/%s/ui/yellow_flag_s3.png" % APP_NAME
-    GREEN_FLAG = "apps/python/%s/ui/green_flag.png" % APP_NAME
-    RACE_FLAG = "apps/python/%s/ui/race_flag.png" % APP_NAME
+    # GREEN_FLAG = "apps/python/%s/ui/green_flag.png" % APP_NAME
+    CHECKERED_FLAG = "apps/python/%s/ui/race_flag.png" % APP_NAME
 
     # POSITION CHANGED INDICATOR
     POSITION_GAINED = "apps/python/%s/ui/position_gained.png" % APP_NAME

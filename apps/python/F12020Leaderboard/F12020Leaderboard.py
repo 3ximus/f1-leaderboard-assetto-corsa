@@ -17,7 +17,7 @@ from constants import FC
 from utils import get_image_size, time_to_string
 from DriverWidget import DriverWidget
 from DriverComparisonWidget import DriverComparisonWidget
-from LeaderboardRow import LeaderboardRow
+from LeaderboardRow import LeaderboardRow, INFO_TYPE
 from FastestLapBanner import FastestLapBanner
 
 
@@ -37,8 +37,6 @@ race_started = False
 replay_started = False
 quali_started = False
 
-leaderboard_displayed = False
-
 qualify_session_time = 0
 
 # REPLAY FILE
@@ -57,6 +55,7 @@ lapCountTimerLabel = None
 leaderboardBaseLabel = None
 leaderboardInfoBackgroundLabel = None
 leaderboardBackgroundLabel = None
+flagLabel = None
 
 class Driver: # class to hold driver information
     def __init__(self, id, n_splits):
@@ -87,6 +86,7 @@ def acMain(ac_version):
     # LABELS
     global leaderboard
     global lapCountTimerLabel, leaderboardBaseLabel, leaderboardInfoBackgroundLabel, leaderboardBackgroundLabel
+    global flagLabel
 
     totalDrivers = ac.getCarsCount()
     n_splits = ac.getTrackLength(0) / FC.TRACK_SECTION_LENGTH
@@ -113,7 +113,7 @@ def acMain(ac_version):
     ac.setPosition(leaderboardBackgroundLabel, 0, h)
     ac.setSize(leaderboardBackgroundLabel, w, totalDrivers*LeaderboardRow.ROW_HEIGHT + 2)
     ac.setBackgroundTexture(leaderboardBackgroundLabel, FC.LEADERBOARD_BACKGROUND);
-
+    
     # ===============================
     # Lap Counter / Time
     lapCountTimerLabel = ac.addLabel(leaderboardWindow, "")
@@ -124,11 +124,25 @@ def acMain(ac_version):
     ac.setFontColor(lapCountTimerLabel, 0.86, 0.86, 0.86, 1)
 
     # ===============================
+    # Flags
+    flagLabel = ac.addLabel(leaderboardWindow, "")
+    ac.setPosition(flagLabel, w, 8)
+    ac.setSize(flagLabel, 110, h-8)
+    ac.setVisible(flagLabel, 0)
+
+    # ===============================
     # Info Background
     leaderboardInfoBackgroundLabel = ac.addLabel(leaderboardWindow, "")
     ac.setPosition(leaderboardInfoBackgroundLabel, w, h)
     ac.setSize(leaderboardInfoBackgroundLabel, 110, totalDrivers*LeaderboardRow.ROW_HEIGHT + 2)
     ac.setBackgroundTexture(leaderboardInfoBackgroundLabel, FC.LEADERBOARD_INFO_BACKGROUNG)
+
+    info_button = ac.addButton(leaderboardWindow, "")
+    ac.setPosition(info_button, w, h)
+    ac.setSize(info_button, 110, totalDrivers*LeaderboardRow.ROW_HEIGHT + 2)
+    ac.addOnClickedListener(info_button, on_click_info)
+    ac.setBackgroundOpacity(info_button, 0)
+    ac.drawBorder(info_button, 0)
 
     # ===============================
     # Driver Widget
@@ -175,6 +189,7 @@ def acUpdate(deltaT):
     # LABELS
     global leaderboard
     global lapCountTimerLabel, leaderboardBaseLabel, leaderboardInfoBackgroundLabel, leaderboardBackgroundLabel
+    global flagLabel
 
     # ============================
     # UPDATE TIMERS
@@ -260,6 +275,20 @@ def acUpdate(deltaT):
                 fastest_lap_banner.timer -= timer1
                 fastest_lap_banner.hide()
 
+            # ============================
+            # FLAGS
+            if info.graphics.flag == 1:
+                ac.setBackgroundTexture(flagLabel, FC.BLUE_FLAG)
+                ac.setVisible(flagLabel, 1)
+            elif info.graphics.flag == 2:
+                ac.setBackgroundTexture(flagLabel, FC.YELLOW_FLAG)
+                ac.setVisible(flagLabel, 1)
+            elif info.graphics.flag == 5:
+                ac.setBackgroundTexture(flagLabel, FC.CHECKERED_FLAG)
+                ac.setVisible(flagLabel, 1)
+            elif info.graphics.flag == 0:
+                ac.setVisible(flagLabel, 0)
+
             timer1 = 0
 
         # Once per second
@@ -284,17 +313,22 @@ def acUpdate(deltaT):
             # ===========================
             # CALCULATE TIME DIFERENCES
             dPosition = sorted(drivers, key=lambda x: x.position)
-            for i in range(1, len(dPosition)):
-                driver_ahead, driver = dPosition[i-1], dPosition[i]
-                timeDiff = driver.split_times[driver.current_split - 1] - driver_ahead.split_times[driver.current_split - 1]
-                if timeDiff < 0: continue # ignore these times, happens on overtakes
-                if driver.position > totalDrivers: continue # might try to update before it is possible
-                driver.timeDiff = timeDiff
-                if timeDiff > 60:
-                    leaderboard[driver.position].update_time("+1 MIN")
-                else:
-                    leaderboard[driver.position].update_time("+" + time_to_string(timeDiff*1000))
-            leaderboard[0].update_time("Interval") # Force it
+            if LeaderboardRow.update_type == INFO_TYPE.GAPS:
+                for i in range(1, len(dPosition)):
+                    driver_ahead, driver = dPosition[i-1], dPosition[i]
+                    timeDiff = driver.split_times[driver.current_split - 1] - driver_ahead.split_times[driver.current_split - 1]
+                    if timeDiff < 0: continue # ignore these times, happens on overtakes
+                    if driver.position > totalDrivers: continue # might try to update before it is possible
+                    driver.timeDiff = timeDiff
+                    if timeDiff > 60:
+                        leaderboard[driver.position].update_time("+1 MIN")
+                    else:
+                        leaderboard[driver.position].update_time("+" + time_to_string(timeDiff*1000))
+                leaderboard[0].update_time("Interval") # Force it
+            elif LeaderboardRow.update_type == INFO_TYPE.POSITIONS:
+                for d in dPosition:
+                    posDiff = d.starting_position - d.position - 1
+                    leaderboard[d.position].update_positions(posDiff)
 
             # ============================
             # MARK FASTEST LAP
@@ -561,9 +595,13 @@ def acUpdate(deltaT):
             # UPDATE TIMES
             if replay_data:
                 for row in leaderboard:
-                    row.update_time("+" + time_to_string(drivers[row.driverId].timeDiff*1000))
-                    if row.row == 0:
-                        row.update_time("Interval") # Force it
+                    if LeaderboardRow.update_type == INFO_TYPE.GAPS:
+                        row.update_time("+" + time_to_string(drivers[row.driverId].timeDiff*1000))
+                        if row.row == 0:
+                            row.update_time("Interval") # Force it
+                    elif LeaderboardRow.update_type == INFO_TYPE.POSITIONS:
+                        posDiff = drivers[row.driverId].starting_position - drivers[row.driverId].position - 1
+                        row.update_positions(posDiff)
 
     # END UPDATE
 
@@ -571,18 +609,6 @@ def acShutdown():
     global replay_file
     if replay_file:
         replay_file.close()
-
-def hide_leaderboard():
-    global leaderboard_displayed
-    global leaderboard
-    global lapCountTimerLabel, leaderboardBaseLabel, leaderboardInfoBackgroundLabel, leaderboardBackgroundLabel
-    if not leaderboard_displayed: return
-
-def show_leaderboard():
-    global leaderboard_displayed
-    global leaderboard
-    global lapCountTimerLabel, leaderboardBaseLabel, leaderboardInfoBackgroundLabel, leaderboardBackgroundLabel
-    if leaderboard_displayed: return
 
 def write_driver_info(replay_file, laps, time, drivers):
     data = "U %d %d " % (laps, time)
@@ -676,5 +702,8 @@ def lookup_fastest_lap(lap, time, replay_data):
                 return replay_data['FL'][lap][it-1]
     return None
 
-
+def on_click_info(*args):
+    # cycle through types
+    LeaderboardRow.update_type += 1
+    LeaderboardRow.update_type %= INFO_TYPE.N_TYPES
 

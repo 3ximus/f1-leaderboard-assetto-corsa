@@ -3,12 +3,22 @@ import functools
 
 from constants import FC
 
+class INFO_TYPE:
+    GAPS = 0
+    POSITIONS = 1
+
+    # amount of types, used to cycle between them
+    N_TYPES = 2
+
 class LeaderboardRow:
     X_BASE = 5
     Y_BASE = 84
     ROW_HEIGHT = 37
     FASTEST_LAP_ID = -1
     HIGHLIGHT_ID = -1
+
+    update_type = INFO_TYPE.GAPS # false for timings, true for positions lost or gained
+
     def __init__(self, leaderboardWindow, row):
         # SET SOME VARIABLES
         self.row = row
@@ -56,19 +66,24 @@ class LeaderboardRow:
         ac.setFontColor(self.infoLabel, 0.86, 0.86, 0.86, 1)
         ac.setFontAlignment(self.infoLabel, "right")
 
+        self.positionChangeLabel = ac.addLabel(leaderboardWindow, "")
+        ac.setPosition(self.positionChangeLabel, 205, py + 4)
+        ac.setSize(self.positionChangeLabel, 18, 18)
+        ac.setVisible(self.positionChangeLabel, 0)
+
         self.fastestLapLabel = ac.addLabel(leaderboardWindow, "")
         ac.setPosition(self.fastestLapLabel, px-41, py-6)
         ac.setSize(self.fastestLapLabel, 37, 37)
         ac.setBackgroundTexture(self.fastestLapLabel, FC.LEADERBOARD_FASTEST_LAP);
         ac.setVisible(self.fastestLapLabel, 0)
 
-        self.button = ac.addButton(leaderboardWindow, "")
-        ac.setPosition(self.button, px, py-7)
-        ac.setSize(self.button, 140, 38)
-        self.on_click_func = functools.partial(self.on_click, row=self)
-        ac.addOnClickedListener(self.button, self.on_click_func)
-        ac.setBackgroundOpacity(self.button, 0)
-        ac.drawBorder(self.button, 0)
+        self.focus_button = ac.addButton(leaderboardWindow, "")
+        ac.setPosition(self.focus_button, px, py-7)
+        ac.setSize(self.focus_button, 140, 38)
+        self.on_click_focus_func = functools.partial(self.on_click_focus, row=self)
+        ac.addOnClickedListener(self.focus_button, self.on_click_focus_func)
+        ac.setBackgroundOpacity(self.focus_button, 0)
+        ac.drawBorder(self.focus_button, 0)
 
     def update_name(self, id):
         if id == ac.getFocusedCar():
@@ -87,7 +102,21 @@ class LeaderboardRow:
 
     def update_time(self, time):
         if self.out or self.pit: return # no need to update
-        ac.setText(self.infoLabel, time)
+        if self.update_type == INFO_TYPE.GAPS:
+            ac.setVisible(self.positionChangeLabel, 0)
+            ac.setText(self.infoLabel, time)
+
+    def update_positions(self, pos_diff):
+        if self.out or self.pit: return # no need to update
+        if self.update_type == INFO_TYPE.POSITIONS:
+            ac.setVisible(self.positionChangeLabel, 1)
+            if pos_diff > 0:
+                ac.setBackgroundTexture(self.positionChangeLabel, FC.POSITION_GAINED)
+            elif pos_diff < 0:
+                ac.setBackgroundTexture(self.positionChangeLabel, FC.POSITION_LOST)
+            else:
+                ac.setBackgroundTexture(self.positionChangeLabel, FC.POSITION_MAINTAINED)
+            ac.setText(self.infoLabel, str(abs(pos_diff)))
 
     def mark_red_position(self):
         if self.out or self.positionLabelId == 1: return # no need to update
@@ -107,6 +136,8 @@ class LeaderboardRow:
     def mark_in(self):
         if not self.out: return
         self.out = False
+        if LeaderboardRow.update_type == INFO_TYPE.POSITIONS:
+            ac.setVisible(self.positionChangeLabel, 1)
         ac.setVisible(self.positionLabel, 1)
         ac.setPosition(self.teamLabel, self.px + 47, self.py + 2)
         ac.setPosition(self.nameLabel, self.px + 65, self.py+4)
@@ -117,6 +148,7 @@ class LeaderboardRow:
         if self.out: return
         self.out = True
         ac.setVisible(self.positionLabel, 0)
+        ac.setVisible(self.positionChangeLabel, 0)
         ac.setPosition(self.teamLabel, self.px + 12, self.py + 2)
         ac.setPosition(self.nameLabel, self.px + 30, self.py+4)
         ac.setFontColor(self.nameLabel, .58,.53,.53, 1)
@@ -126,12 +158,15 @@ class LeaderboardRow:
     def mark_enter_pits(self):
         if self.out or self.pit: return
         self.pit = True
+        ac.setVisible(self.positionChangeLabel, 0)
         ac.setText(self.infoLabel, "IN PIT")
         ac.setFontColor(self.infoLabel, 0,.84,1, 1)
 
     def mark_left_pits(self):
         if self.out or not self.pit: return
         self.pit = False
+        if LeaderboardRow.update_type == INFO_TYPE.POSITIONS:
+            ac.setVisible(self.positionChangeLabel, 1)
         if self.driverId == 0:
             ac.setText(self.infoLabel, "Interval")
         ac.setFontColor(self.infoLabel, 0.86, 0.86, 0.86, 1)
@@ -143,6 +178,7 @@ class LeaderboardRow:
             ac.setVisible(self.fastestLapLabel, 0)
 
     @staticmethod
-    def on_click(*args, row=None):
+    def on_click_focus(*args, row=None):
         if row:
             ac.focusCar(row.driverId)
+

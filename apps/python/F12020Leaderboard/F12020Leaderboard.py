@@ -383,7 +383,7 @@ def acUpdate(deltaT):
     # ================================================================
     #                        QUALIFY / PRACTICE
     # ================================================================
-    elif info.graphics.session == 1 or (info.graphics.session == 0 and info.graphics.status != 0):
+    elif info.graphics.session == 1 or (info.graphics.session == 0 and info.graphics.status != 1):
 
         # 3 times per second
         if timer1 > 0.3:

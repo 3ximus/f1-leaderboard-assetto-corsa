@@ -42,7 +42,7 @@ class LeaderboardRow:
         ac.setBackgroundTexture(self.positionLabel, FC.LEADERBOARD_POSITION_LABEL[self.row+1]);
 
         self.driverName = ac.getDriverName(row)
-        self.driverId = row
+        self.driverId = -1
         self.nameLabel = ac.addLabel(leaderboardWindow, self.driverName[:3].upper())
         ac.setPosition(self.nameLabel, px + 65, py+4)
         ac.setFontSize(self.nameLabel, 18)

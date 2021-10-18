@@ -15,6 +15,11 @@ Each line contains the following information about each driver in order separate
 - Name of the image files inside `ui/numbers/` (without file extension)
 - Driver Name
 
+## Contributors
+
+- @Cozy61
+- Imagineer_NL
+
 
 ### Screenshots
 
